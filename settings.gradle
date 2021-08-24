@@ -1,0 +1,3 @@
+rootProject.name = "LYLPlayerDemo"
+include ':app'
+include ':video'
