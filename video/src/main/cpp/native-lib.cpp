@@ -6,7 +6,6 @@
 
 #include <SLES/OpenSLES.h>
 #include <SLES/OpenSLES_Android.h>
-
 #include <assert.h>
 
 //ffmpeg 是 C 写的，所以要以 C 的方式引入
@@ -374,13 +373,17 @@ Java_com_dabaicai_video_ffmpeg_VideoControl_native_1audio_1init(JNIEnv *env, jcl
 }
 //缓冲器队列接口
 SLAndroidSimpleBufferQueueItf bqPlayerBufferQueue;
+//缓冲 buffer
 void *buffer;
-FILE *pcmFile;
 uint8_t *out_buffer;
+FILE *pcmFile;
+
 
 int getPcmData(void **pcm) {
     int size = 0;
     while (!feof(pcmFile)) {
+        //从 PCM 文件读取大小为1 数量为 44100 * 2 * 2 个数据并存入 out_buffer 中
+        //size 为实际读的数量
         size = fread(out_buffer, 1, 44100 * 2 * 2, pcmFile);
         if (out_buffer == NULL) {
             LOGE("%s", "read end");
@@ -399,13 +402,10 @@ int getPcmData(void **pcm) {
 void pcmBufferCallBack(SLAndroidSimpleBufferQueueItf bf, void *context) {
     //assert(NULL == context);
     int size = getPcmData(&buffer);
-    // for streaming playback, replace this test by logic to find and fill the next buffer
     if (NULL != buffer) {
         SLresult result;
         // enqueue another buffer
         result = (*bqPlayerBufferQueue)->Enqueue(bqPlayerBufferQueue, buffer, size);
-        // the most likely other result is SL_RESULT_BUFFER_INSUFFICIENT,
-        // which for this code example would indicate a programming error
     } else {
         LOGE("size null");
     }
@@ -418,12 +418,22 @@ Java_com_dabaicai_video_ffmpeg_VideoControl_native_1opensl_1start(JNIEnv *env, j
 
     const char *path = "/storage/emulated/0/aa.pcm";
     pcmFile = fopen(path,"r");
+    if(pcmFile == NULL)
+    {
+        LOGE("%s", "open file error");
+        return;
+    }
+    //44100 * 2 * 2 是上次输出 PCM 文件的格式， 44100=采样 2=左右声道 2=16 bit=2 byte
+    out_buffer = (uint8_t *) malloc(44100 * 2 * 2);
 
+    //执行结果
     SLresult result;
+    //引擎对象接口
     SLObjectItf engineObj;
+    //引擎对象实例
     SLEngineItf engineItf;
 
-    //1.创建引擎
+    //1.创建引擎 三步走
     result = slCreateEngine(&engineObj, 0, 0, 0, 0, 0);
     assert(SL_RESULT_SUCCESS == result);
     (void) result;
@@ -436,9 +446,8 @@ Java_com_dabaicai_video_ffmpeg_VideoControl_native_1opensl_1start(JNIEnv *env, j
     assert(SL_RESULT_SUCCESS == result);
     (void) result;
 
-    //2.创建混音器
+    //2.创建混音器 这些参数大多都是从 google simple 中拿的，具体的含义不太清楚
     SLObjectItf mixerObj;
-    SLOutputMixItf outputMixItf;
     SLEnvironmentalReverbItf outputMixEnvironmentalReverb = NULL;
     SLEnvironmentalReverbSettings reverbSettings = SL_I3DL2_ENVIRONMENT_PRESET_STONECORRIDOR;
     const SLInterfaceID ids[1] = {SL_IID_ENVIRONMENTALREVERB};
