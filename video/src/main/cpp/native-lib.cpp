@@ -460,7 +460,7 @@ Java_com_dabaicai_video_ffmpeg_VideoControl_native_1opensl_1start(JNIEnv *env, j
     assert(SL_RESULT_SUCCESS == result);
     (void) result;
 
-    result = (*mixerObj)->GetInterface(mixerObj, SL_IID_ENVIRONMENTALREVERB, &outputMixEnvironmentalReverb);
+    result = (*mixerObj)->GetInterface(mixerObj, SL_IID_ENVIRONMENTALREVERB,&outputMixEnvironmentalReverb);
     if (SL_RESULT_SUCCESS == result) {
         result = (*outputMixEnvironmentalReverb)->SetEnvironmentalReverbProperties(
                 outputMixEnvironmentalReverb, &reverbSettings);
@@ -471,7 +471,7 @@ Java_com_dabaicai_video_ffmpeg_VideoControl_native_1opensl_1start(JNIEnv *env, j
     SLObjectItf playerObj;
     SLPlayItf playItf;
 
-    SLDataLocator_AndroidSimpleBufferQueue android_queue = {SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE, 2};
+    SLDataLocator_AndroidSimpleBufferQueue android_queue = {SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE,2};
     SLDataFormat_PCM pcm = {
             SL_DATAFORMAT_PCM,//播放pcm格式的数据
             2,//2个声道（立体声）
@@ -493,7 +493,7 @@ Java_com_dabaicai_video_ffmpeg_VideoControl_native_1opensl_1start(JNIEnv *env, j
     const SLboolean pInterfaceRequired[3] = {SL_BOOLEAN_TRUE, SL_BOOLEAN_TRUE, SL_BOOLEAN_TRUE,
             /*SL_BOOLEAN_TRUE,*/ };
 
-    result = (*engineItf)->CreateAudioPlayer(engineItf, &playerObj, &pAudioSrc, &pAudioSnk, numInterfaces,
+    result = (*engineItf)->CreateAudioPlayer(engineItf, &playerObj, &pAudioSrc, &pAudioSnk,numInterfaces,
                                              pInterfaceIds, pInterfaceRequired);
     assert(SL_RESULT_SUCCESS == result);
     (void) result;
@@ -528,4 +528,285 @@ Java_com_dabaicai_video_ffmpeg_VideoControl_native_1opensl_1start(JNIEnv *env, j
     //6.回调
     pcmBufferCallBack(bqPlayerBufferQueue, NULL);
 
+}
+
+////缓冲器队列接口
+//SLAndroidSimpleBufferQueueItf bqPlayerBufferQueue;
+////缓冲 buffer
+//void *buffer;
+//uint8_t *out_buffer;
+
+AVFormatContext *avFormatContext;
+int audio_index;
+AVCodecParameters *avCodecParameters;
+AVCodec *avCodec;
+AVCodecContext *avCodecContext;
+SwrContext *swrContext;
+AVPacket *avPacket;
+AVFrame *avFrame;
+int ret = -1;
+
+
+int getPackageSize(void **pcm) {
+    avPacket = av_packet_alloc();
+    int data_size = 0;
+    while (av_read_frame(avFormatContext, avPacket) >= 0) {
+        //这里要先判断 之前在拿到 frame 之后判断 老是报 -22 错误
+        if (avPacket->stream_index != audio_index) {
+            continue;
+        }
+        LOGE("av_read_frame");
+
+        ret = avcodec_send_packet(avCodecContext, avPacket);
+        if (ret == AVERROR(EAGAIN)) {
+            continue;
+        } else if ((ret == AVERROR(EINVAL)) || (ret == AVERROR_EOF) || (ret == AVERROR(ENOMEM))) {
+            break;
+        } else if (ret < 0) {
+            LOGE("legitimate decoding 1 errors ret=%d", ret);
+            break;
+        }
+
+
+        avFrame = av_frame_alloc();
+        ret = avcodec_receive_frame(avCodecContext, avFrame);
+
+        if (ret == AVERROR(EAGAIN)) {
+            continue;
+        } else if ((ret == AVERROR(EINVAL)) || (ret == AVERROR_EOF)) {
+            break;
+        } else if (ret < 0) {
+            LOGE("legitimate decoding 2 errors");
+            break;
+        }
+
+        //重采样 将 frame 数据写到输出缓冲区 out_buffer 里面
+        ret = swr_convert(swrContext, &out_buffer, avFrame->nb_samples,
+                          (const uint8_t **) avFrame->data, avFrame->nb_samples);
+
+        //判断这个是因为之前我直接通过 swr_alloc_set_opts() 拿到了 SwrContext， 之后没有对 SwrContext 进行初始化 swr_init() 在 swr_convert() 报了一个 Invalid argument的错误
+        if (ret < 0) {
+            char buf[1024];
+            av_strerror(ret, buf, 1024);
+            LOGE("swr_convert error  %d(%s)", ret, buf);//Invalid argument
+            continue;
+        }
+
+        //计算 out_buffer 数量
+        int out_channels = av_get_channel_layout_nb_channels(AV_CH_LAYOUT_STEREO);
+        data_size = ret * out_channels * av_get_bytes_per_sample(AV_SAMPLE_FMT_S16);
+        *pcm = out_buffer;
+//        LOGE("data_size=%d", data_size);
+//        fwrite(out_buffer, 1, data_size, file);
+
+    }
+    return data_size;
+}
+
+void packageBufferCallBack(SLAndroidSimpleBufferQueueItf bf, void *context) {
+    //assert(NULL == context);
+    int size = getPackageSize(&buffer);
+    if (NULL != buffer) {
+        SLresult result;
+        // enqueue another buffer
+        result = (*bqPlayerBufferQueue)->Enqueue(bqPlayerBufferQueue, buffer, size);
+    } else {
+        LOGE("size null");
+    }
+
+}
+
+
+void init_opensl_es() {
+
+    //执行结果
+    SLresult result;
+    //引擎对象接口
+    SLObjectItf engineObj;
+    //引擎对象实例
+    SLEngineItf engineItf;
+
+    //1.创建引擎 三步走
+    result = slCreateEngine(&engineObj, 0, 0, 0, 0, 0);
+    assert(SL_RESULT_SUCCESS == result);
+    (void) result;
+
+    result = (*engineObj)->Realize(engineObj, SL_BOOLEAN_FALSE);
+    assert(SL_RESULT_SUCCESS == result);
+    (void) result;
+
+    result = (*engineObj)->GetInterface(engineObj, SL_IID_ENGINE, &engineItf);
+    assert(SL_RESULT_SUCCESS == result);
+    (void) result;
+
+    //2.创建混音器 这些参数大多都是从 google simple 中拿的，具体的含义不太清楚
+    SLObjectItf mixerObj;
+    SLEnvironmentalReverbItf outputMixEnvironmentalReverb = NULL;
+    SLEnvironmentalReverbSettings reverbSettings = SL_I3DL2_ENVIRONMENT_PRESET_STONECORRIDOR;
+    const SLInterfaceID ids[1] = {SL_IID_ENVIRONMENTALREVERB};
+    const SLboolean req[1] = {SL_BOOLEAN_FALSE};
+    result = (*engineItf)->CreateOutputMix(engineItf, &mixerObj, 1, ids, req);
+    assert(SL_RESULT_SUCCESS == result);
+    (void) result;
+
+    result = (*mixerObj)->Realize(mixerObj, SL_BOOLEAN_FALSE);
+    assert(SL_RESULT_SUCCESS == result);
+    (void) result;
+
+    result = (*mixerObj)->GetInterface(mixerObj, SL_IID_ENVIRONMENTALREVERB,
+                                       &outputMixEnvironmentalReverb);
+    if (SL_RESULT_SUCCESS == result) {
+        result = (*outputMixEnvironmentalReverb)->SetEnvironmentalReverbProperties(
+                outputMixEnvironmentalReverb, &reverbSettings);
+        (void) result;
+    }
+
+    //3.创建播放器
+    SLObjectItf playerObj;
+    SLPlayItf playItf;
+
+    SLDataLocator_AndroidSimpleBufferQueue android_queue = {SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE,
+                                                            2};
+    SLDataFormat_PCM pcm = {
+            SL_DATAFORMAT_PCM,//播放pcm格式的数据
+            2,//2个声道（立体声）
+            SL_SAMPLINGRATE_44_1,//44100hz的频率
+            SL_PCMSAMPLEFORMAT_FIXED_16,//位数 16位
+            SL_PCMSAMPLEFORMAT_FIXED_16,//和位数一致就行
+            SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT,//立体声（前左前右）
+            SL_BYTEORDER_LITTLEENDIAN//结束标志
+    };
+    SLDataSource pAudioSrc = {&android_queue, &pcm};
+
+    SLDataLocator_OutputMix loc_outmix = {SL_DATALOCATOR_OUTPUTMIX, mixerObj};
+    SLDataSink pAudioSnk = {&loc_outmix, NULL};
+
+    SLuint32 numInterfaces = 3;
+    const SLInterfaceID pInterfaceIds[3] = {SL_IID_BUFFERQUEUE, SL_IID_VOLUME, SL_IID_EFFECTSEND,
+            /*SL_IID_MUTESOLO,*/};
+
+    const SLboolean pInterfaceRequired[3] = {SL_BOOLEAN_TRUE, SL_BOOLEAN_TRUE, SL_BOOLEAN_TRUE,
+            /*SL_BOOLEAN_TRUE,*/ };
+
+    result = (*engineItf)->CreateAudioPlayer(engineItf, &playerObj, &pAudioSrc, &pAudioSnk,
+                                             numInterfaces,
+                                             pInterfaceIds, pInterfaceRequired);
+    assert(SL_RESULT_SUCCESS == result);
+    (void) result;
+
+    result = (*playerObj)->Realize(playerObj, SL_BOOLEAN_FALSE);
+    assert(SL_RESULT_SUCCESS == result);
+    (void) result;
+
+    result = (*playerObj)->GetInterface(playerObj, SL_IID_PLAY, &playItf);
+    assert(SL_RESULT_SUCCESS == result);
+    (void) result;
+
+    //4.设置回调队列及回调函数
+    SLVolumeItf pcmPlayerVolume = NULL;
+
+    result = (*playerObj)->GetInterface(playerObj, SL_IID_BUFFERQUEUE, &bqPlayerBufferQueue);
+    assert(SL_RESULT_SUCCESS == result);
+    (void) result;
+
+    result = (*bqPlayerBufferQueue)->RegisterCallback(bqPlayerBufferQueue, packageBufferCallBack, NULL);
+    assert(SL_RESULT_SUCCESS == result);
+    (void) result;
+
+    //获取音量接口
+    result = (*playerObj)->GetInterface(playerObj, SL_IID_VOLUME, &pcmPlayerVolume);
+    assert(SL_RESULT_SUCCESS == result);
+    (void) result;
+
+    //5.设置播放状态
+    (*playItf)->SetPlayState(playItf, SL_PLAYSTATE_PLAYING);
+
+    //6.回调
+    packageBufferCallBack(bqPlayerBufferQueue, NULL);
+}
+
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_dabaicai_video_ffmpeg_VideoControl_native_1audio_1play(JNIEnv *env, jclass clazz,jstring _path) {
+    const char *path = env->GetStringUTFChars(_path, 0);
+
+    av_register_all();
+
+    avformat_network_init();
+
+    avFormatContext = avformat_alloc_context();
+
+    AVDictionary *options = NULL;
+
+    if (av_dict_set(&options, "timeout", "3000000", 0) < 0) {
+        LOGE("av_dict_set error");
+        return;
+    }
+
+
+    if ((ret = avformat_open_input(&avFormatContext, path, NULL, &options)) != 0) {
+        char buf[1024];
+        av_strerror(ret, buf, 1024);
+        LOGE("avformat_open_input error Couldn’t open file %s: %d(%s)", path, ret, buf);
+        return;
+    }
+
+    if (avformat_find_stream_info(avFormatContext, NULL) < 0) {
+        LOGE("avformat_find_stream_info error");
+        return;
+    }
+
+    audio_index = -1;
+    for (int i = 0; i < avFormatContext->nb_streams; ++i) {
+        if (avFormatContext->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+            audio_index = i;
+        }
+    }
+
+    if (audio_index == -1) {
+        LOGE("audio index not find");
+        return;
+    }
+
+    avCodecParameters = avFormatContext->streams[audio_index]->codecpar;
+    avCodec = avcodec_find_decoder(avCodecParameters->codec_id);
+    avCodecContext = avcodec_alloc_context3(avCodec);
+    if (avcodec_parameters_to_context(avCodecContext, avCodecParameters) < 0) {
+        LOGE("avcodec_parameters_to_context error");
+        return;
+    }
+
+    if (avcodec_open2(avCodecContext, avCodec, NULL) != 0) {
+        LOGE("avcodec_open2 error");
+        return;
+    }
+
+
+    int64_t out_ch_layout = AV_CH_LAYOUT_STEREO;
+    enum AVSampleFormat out_sample_fmt = AVSampleFormat::AV_SAMPLE_FMT_S16;
+    int out_sample_rate = 44100;
+    int64_t in_ch_layout = avCodecContext->channel_layout;
+    enum AVSampleFormat in_sample_fmt = avCodecContext->sample_fmt;
+    int in_sample_rate = avCodecContext->sample_rate;
+    //拿到转换上下文 设置输入输出参数
+    swrContext = swr_alloc_set_opts(NULL,
+                                    out_ch_layout, out_sample_fmt, out_sample_rate,
+                                    in_ch_layout, in_sample_fmt, in_sample_rate,
+                                    0, NULL);
+    if (swr_init(swrContext) < 0) {
+        LOGE("swr_init error");
+        return;
+    }
+
+
+    /*
+     * 输出文件缓冲区
+     *
+     * 2 : 16bit 2个字节
+     * 2 : 双通道  AV_CH_LAYOUT_STEREO = (AV_CH_FRONT_LEFT|AV_CH_FRONT_RIGHT)
+     * 44100 : 采样率
+     */
+    out_buffer = (uint8_t *) (av_malloc(2 * 2 * 44100));
+    init_opensl_es();
 }
