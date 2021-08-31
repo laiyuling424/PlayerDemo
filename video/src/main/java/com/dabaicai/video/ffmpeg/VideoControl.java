@@ -28,9 +28,12 @@ public class VideoControl {
     //视频播放
     public native static void native_init(Surface surface, String path);
 
-    //音频播放
+    //generate pcm file
     public native static void native_audio_init(String path);
 
-    //音频播放
+    //PCM file paly
     public native static void native_opensl_start();
+
+    //audio paly
+    public native static void native_audio_play(String path);
 }
