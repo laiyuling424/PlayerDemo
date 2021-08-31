@@ -23,6 +23,7 @@ public class MainActivity2 extends AppCompatActivity implements SurfaceHolder.Ca
     Button startAudioButton;
     Button versionButton;
     Button openslButton;
+    Button startPlayAudioButton;
     SurfaceView surfaceView;
     SurfaceHolder surfaceHolder;
 
@@ -34,6 +35,7 @@ public class MainActivity2 extends AppCompatActivity implements SurfaceHolder.Ca
         versionButton = findViewById(R.id.versionButton);
         startVideoButton = findViewById(R.id.startVideoButton);
         startAudioButton = findViewById(R.id.startAudioButton);
+        startPlayAudioButton = findViewById(R.id.startPlayAudioButton);
         openslButton = findViewById(R.id.openslButton);
         surfaceView = findViewById(R.id.surfaceView);
         textView = findViewById(R.id.textView);
@@ -68,6 +70,17 @@ public class MainActivity2 extends AppCompatActivity implements SurfaceHolder.Ca
             @Override
             public void onClick(View v) {
                 VideoControl.native_opensl_start();
+            }
+        });
+
+        startPlayAudioButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                File file = new File(Environment.getExternalStorageDirectory(), "aa.mp4");
+                if (file.exists()) {
+                    VideoControl.native_audio_play(file.getAbsolutePath());
+                }
+
             }
         });
     }

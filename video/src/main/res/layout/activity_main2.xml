@@ -41,5 +41,11 @@
         android:id="@+id/openslButton"
         android:text="opensl es start"/>
 
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/startPlayAudioButton"
+        android:text="audio start play"/>
+
 
 </LinearLayout>
