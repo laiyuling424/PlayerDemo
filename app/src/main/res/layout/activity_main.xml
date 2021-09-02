@@ -10,13 +10,13 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/video"
-        android:text="video" />
+        android:text="demo" />
 
 
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:onClick="audio"
-        android:text="audio" />
+        android:onClick="player"
+        android:text="player" />
 
 </LinearLayout>

@@ -2,9 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.dabaicai.video">
 
-
     <application>
-        <activity android:name=".MainActivity2"></activity>
+        <activity android:name=".PlayerActivity"></activity>
+        <activity android:name=".MainActivity2" />
     </application>
 
 </manifest>
