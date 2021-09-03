@@ -70,7 +70,7 @@ add_library( # Sets the name of the library.
         SHARED
 
         # Provides a relative path to your source file(s).
-        native-lib.cpp )
+        native-lib.cpp FFmpegPlayer.cpp JavaCallHelper.cpp VideoChannel.cpp)
 
 
 find_library( # Sets the name of the path variable.
@@ -82,6 +82,7 @@ find_library( # Sets the name of the path variable.
 
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
+include_directories(${CMAKE_SOURCE_DIR})
 target_link_libraries( # Specifies the target library.
         native-lib
         avcodec

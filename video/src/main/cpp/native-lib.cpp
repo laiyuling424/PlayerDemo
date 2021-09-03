@@ -8,6 +8,11 @@
 #include <SLES/OpenSLES_Android.h>
 #include <assert.h>
 
+#include "lock_queue.h"
+#include "Constant.h"
+#include "BaseChannel.h"
+#include "FFmpegPlayer.h"
+
 //ffmpeg 是 C 写的，所以要以 C 的方式引入
 extern "C" {
 #include "libavcodec/avcodec.h"
@@ -17,9 +22,7 @@ extern "C" {
 #include <libswresample/swresample.h>
 }
 
-#define TAG "lyll"
 
-#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, TAG, __VA_ARGS__) // 定义 log 函数
 
 
 extern "C"
