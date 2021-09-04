@@ -38,9 +38,9 @@ public:
     }
 
     ~LockQueue() {
-        pthread_mutex_destroy(&_mutex);
-        pthread_cond_destroy(&_cond);
         clear();
+        pthread_cond_destroy(&_cond);
+        pthread_mutex_destroy(&_mutex);
     }
 
     void setWork(bool isWork) {

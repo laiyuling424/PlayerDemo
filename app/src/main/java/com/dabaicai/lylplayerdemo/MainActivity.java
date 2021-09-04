@@ -9,6 +9,7 @@ import android.widget.Button;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.dabaicai.video.MainActivity2;
+import com.dabaicai.video.PlayerActivity;
 import com.permissionx.guolindev.PermissionX;
 import com.permissionx.guolindev.callback.ExplainReasonCallback;
 import com.permissionx.guolindev.callback.ForwardToSettingsCallback;
@@ -65,6 +66,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void player(View view) {
-
+        startActivity(new Intent(MainActivity.this, PlayerActivity.class));
     }
 }

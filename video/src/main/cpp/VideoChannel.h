@@ -23,21 +23,20 @@ extern "C" {
 #include "libavutil/imgutils.h"
 #include "libswresample/swresample.h"
 }
+typedef void (*RenderFrame)(int, int, uint8_t *, int);
 
 class VideoChannel : public BaseChannel {
 
 private:
-    jobject surface;
     pthread_t play_pid;
     pthread_t decode_pid;
+    RenderFrame renderFrame;
 
 public:
 
     VideoChannel(AVCodecContext *context, AVRational time, int id, JavaCallHelper *javaCallHelper);
 
     ~VideoChannel();
-
-    void setSurface(jobject surface);
 
     virtual void play();
 
@@ -51,7 +50,7 @@ public:
 
     void render();
 
-    void realRender();
+    void setFrameRender(RenderFrame renderFrame);
 };
 
 

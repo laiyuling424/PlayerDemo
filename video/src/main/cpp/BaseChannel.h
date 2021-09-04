@@ -20,11 +20,10 @@ extern "C" {
 #include "Constant.h"
 
 class BaseChannel {
-private:
+public:
     JavaCallHelper *javaCallHelper;
     AVRational time_base;
     double clock = 0;
-protected:
     AVCodecContext *avCodecContext;
     LockQueue<AVPacket *> package_queue;
     LockQueue<AVFrame *> frame_queue;
@@ -48,19 +47,6 @@ public:
         package_queue.clear();
         frame_queue.clear();
         LOGE("释放channel:%d %d", package_queue.size(), frame_queue.size());
-    }
-
-
-    LockQueue<AVPacket *> getPacketQueue() {
-        return package_queue;
-    }
-
-    LockQueue<AVFrame *> getFrameQueue() {
-        return frame_queue;
-    }
-
-    int getChannelId() {
-        return channelId;
     }
 
     bool getIsPlaying() {

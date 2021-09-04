@@ -1,12 +1,14 @@
 package com.dabaicai.video
 
 import android.os.Bundle
+import android.os.Environment
 import android.view.SurfaceView
 import android.widget.Button
 import android.widget.SeekBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.dabaicai.video.ffmpeg.PlayerControl
+import java.io.File
 
 class PlayerActivity : AppCompatActivity(), PlayerControl.PlayerControlCallBack {
 
@@ -25,6 +27,9 @@ class PlayerActivity : AppCompatActivity(), PlayerControl.PlayerControlCallBack 
     private lateinit var audioFastButton: Button
     private lateinit var p1Button: Button
     private lateinit var p2Button: Button
+
+
+    private lateinit var playerControl: PlayerControl
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,7 +57,15 @@ class PlayerActivity : AppCompatActivity(), PlayerControl.PlayerControlCallBack 
 
         statusButton.setOnClickListener {
 
+//            File file = new File("/storage/emulated/0/aa.mp4");
+            val file = File(Environment.getExternalStorageDirectory(), "aa.mp4")
+            if (file.exists()) {
+                playerControl.setPath(file.absolutePath)
+                playerControl.startOrStop()
+            }
         }
+
+        playerControl = PlayerControl(surfaceView)
 
     }
 

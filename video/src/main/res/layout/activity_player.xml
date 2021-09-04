@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:layout_margin="10dp"
     android:orientation="vertical"
     tools:context=".PlayerActivity">
 
@@ -40,6 +41,7 @@
             android:id="@+id/statusButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginRight="20dp"
             android:text="start" />
 
         <Button
@@ -59,6 +61,7 @@
             android:id="@+id/nextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginRight="20dp"
             android:text="next" />
 
         <Button
@@ -77,6 +80,7 @@
             android:id="@+id/fastButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginRight="20dp"
             android:text="+15s" />
 
         <Button
@@ -95,6 +99,7 @@
             android:id="@+id/videoFastButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginRight="20dp"
             android:text="video +1s" />
 
         <Button
@@ -113,6 +118,7 @@
             android:id="@+id/p1Button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginRight="20dp"
             android:text="p1" />
 
         <Button

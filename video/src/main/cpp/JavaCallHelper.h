@@ -5,6 +5,8 @@
 #ifndef LYLPLAYERDEMO_JAVACALLHELPER_H
 #define LYLPLAYERDEMO_JAVACALLHELPER_H
 
+#include <jni.h>
+#include "Constant.h"
 
 /**
  * author : lyl
@@ -15,6 +17,7 @@ class JavaCallHelper {
 private:
     jobject playerControlclass;
     JavaVM *javaVM;
+    JNIEnv *env;
     //private void videoInfo(int fps, int time)
     //private void status(int status)
     //private void ready(int alltime)
@@ -25,7 +28,7 @@ private:
     jmethodID errorID;
 
 public:
-    JavaCallHelper(JavaVM *javaVM, jobject jclass);
+    JavaCallHelper(JavaVM *javaVM, JNIEnv *env, jobject jclass);
 
     ~JavaCallHelper();
 

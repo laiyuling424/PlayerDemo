@@ -9,6 +9,32 @@
  * e-mail : laiyuling424@gmail.com
  * date   : 2021/9/3 3:30 下午
  */
+ANativeWindow *nativeWindow = 0;
+
+void renderFrame(int32_t w, int32_t h, uint8_t *data, int linesize) {
+    //窗口缓冲区
+    ANativeWindow_Buffer outBuffer;
+
+    //设置缓冲区的属性（宽、高、像素格式）
+    ANativeWindow_setBuffersGeometry(nativeWindow, w, h, WINDOW_FORMAT_RGBA_8888);
+
+    // lock native window 相当于锁住画布 outBuffer 为渲染一帧的缓冲区
+    ANativeWindow_lock(nativeWindow, &outBuffer, NULL);
+
+
+//    uint8_t *dst = (uint8_t *) outBuffer.bits;
+    int destStride = outBuffer.stride * 4;
+    uint8_t *src_data = data;
+    int src_linesize = linesize;
+    uint8_t *firstWindown = static_cast<uint8_t *>(outBuffer.bits);
+    // 拷贝数据， 数据： dst_data -> outBuffer
+    for (int i = 0; i < outBuffer.height; ++i) {
+        memcpy(firstWindown + i * destStride, src_data + i * src_linesize, destStride);
+    }
+
+    //提交画布数据
+    ANativeWindow_unlockAndPost(nativeWindow);
+}
 
 void *pthread_prepare(void *context) {
     FFmpegPlayer *player = static_cast<FFmpegPlayer *>(context);
@@ -16,14 +42,14 @@ void *pthread_prepare(void *context) {
     return 0;
 }
 
-void *pthread_play(void *context) {
+void *pthread_ffmpeg_play(void *context) {
     FFmpegPlayer *player = static_cast<FFmpegPlayer *>(context);
     player->play();
     return 0;
 }
 
-FFmpegPlayer::FFmpegPlayer(JavaVM *javaVM, jobject jclass) : javaVM(javaVM) {
-    javaCallHelper = new JavaCallHelper(this->javaVM, jclass);
+FFmpegPlayer::FFmpegPlayer(JavaVM *javaVM, JNIEnv *env, jobject jclass) : javaVM(javaVM), env(env) {
+    javaCallHelper = new JavaCallHelper(this->javaVM, env, jclass);
 }
 
 
@@ -31,12 +57,14 @@ FFmpegPlayer::~FFmpegPlayer() {
 
 }
 
-void FFmpegPlayer::setPath(char *path) {
+void FFmpegPlayer::setPath(const char *path) {
     this->url = path;
 }
 
 void FFmpegPlayer::setSurface(jobject surface) {
     this->surface = surface;
+    //绘制窗口 从 java 层拿到 surface ，在通过 surface 拿到 native_window，绘制画面到 window 窗口上
+    nativeWindow = ANativeWindow_fromSurface(env, surface);
 }
 
 
@@ -94,9 +122,14 @@ void FFmpegPlayer::prepareFFmpeg() {
             return;
         }
         if (this->formatContext->streams[i]->codecpar->codec_type == AVMediaType::AVMEDIA_TYPE_VIDEO) {
+            LOGE("channel id is %d", i);
+            if (videoChannel) {
+                continue;
+            }
             videoChannel = new VideoChannel(avCodecContext, this->formatContext->streams[i]->time_base, i,
                                             this->javaCallHelper);
-            videoChannel->setSurface(this->surface);
+            videoChannel->setFrameRender(renderFrame);
+
             //视频
             //int fps = frame_rate.num / (double)frame_rate.den;
 //            int fps =av_q2d(this->formatContext->streams[i]->avg_frame_rate);
@@ -104,34 +137,38 @@ void FFmpegPlayer::prepareFFmpeg() {
 
         }
     }
+    if (videoChannel) {
+        start();
+    }
 }
 
 
 void FFmpegPlayer::start() {
-    this->isPlaying = 1;
+    this->isPlaying = true;
     if (videoChannel) {
         videoChannel->play();
     }
-    pthread_create(&play_pid, NULL, pthread_play, this);
+    pthread_create(&play_pid, NULL, pthread_ffmpeg_play, this);
 }
 
 void FFmpegPlayer::play() {
     int ret = 0;
     while (this->isPlaying) {
-        if (videoChannel && videoChannel->getPacketQueue().size() > 100) {
+        if (videoChannel && videoChannel->package_queue.size() > 100) {
             av_usleep(1000 * 10);
             continue;
         }
         AVPacket *avPacket = av_packet_alloc();
         ret = av_read_frame(this->formatContext, avPacket);
-
+        LOGE("avPacket->stream_index is %d", avPacket->stream_index);
         if (ret == 0) {
-            if (avPacket->stream_index == videoChannel->getChannelId()) {
-                videoChannel->getPacketQueue().push(avPacket);
+            if (avPacket->stream_index == videoChannel->channelId) {
+                videoChannel->package_queue.push(avPacket);
+                LOGE("package_queue push size is %d", videoChannel->package_queue.size());
             }
         } else if (ret == AVERROR_EOF) {
             //读取完毕 但是不一定播放完毕
-            if (videoChannel->getPacketQueue().empty() && videoChannel->getFrameQueue().empty()) {
+            if (videoChannel->package_queue.empty() && videoChannel->frame_queue.empty()) {
                 LOGE("播放完毕。。。");
                 break;
             }
@@ -140,7 +177,7 @@ void FFmpegPlayer::play() {
             break;
         }
     }
-    isPlaying = 0;
+    isPlaying = false;
     videoChannel->stop();
 
 }
@@ -156,6 +193,10 @@ void FFmpegPlayer::seek(int time) {
 void FFmpegPlayer::error(int code, char *message) {
 
 }
+
+
+
+
 
 
 

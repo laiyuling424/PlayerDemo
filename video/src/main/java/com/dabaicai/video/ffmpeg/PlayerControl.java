@@ -44,26 +44,36 @@ public class PlayerControl implements SurfaceHolder.Callback {
     private SurfaceHolder surfaceHolder;
     private PlayerControlCallBack playerControlCallBack;
 
-    public PlayerControl() {
+    public PlayerControl(SurfaceView surfaceView) {
         playerStatus = PlayerStatus.NONE;
-    }
-
-
-    private void startOrStop() {
-        if (PlayerStatus.NONE == playerStatus) {
-            native_prepare(path);
-        } else if (PlayerStatus.PLAYING == playerStatus) {
-            native_stop();
-        } else if (PlayerStatus.STOP == playerStatus) {
-            native_start();
+        if (null != this.surfaceHolder) {
+            this.surfaceHolder.removeCallback(this);
         }
+        this.surfaceHolder = surfaceView.getHolder();
+        this.surfaceHolder.addCallback(this);
     }
 
-    private void setCallBack(PlayerControlCallBack playerControlCallBack) {
+    public void setPath(String path) {
+        this.path = path;
+    }
+
+
+    public void startOrStop() {
+        native_prepare(path);
+//        if (PlayerStatus.NONE == playerStatus) {
+//            native_prepare(path);
+//        } else if (PlayerStatus.PLAYING == playerStatus) {
+//            native_stop();
+//        } else if (PlayerStatus.STOP == playerStatus) {
+//            native_start();
+//        }
+    }
+
+    public void setCallBack(PlayerControlCallBack playerControlCallBack) {
         this.playerControlCallBack = playerControlCallBack;
     }
 
-    private void setSurfaceView(SurfaceView surfaceView) {
+    public void setSurfaceView(SurfaceView surfaceView) {
         if (null != this.surfaceHolder) {
             this.surfaceHolder.removeCallback(this);
         }

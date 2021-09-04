@@ -420,9 +420,8 @@ JNIEXPORT void JNICALL
 Java_com_dabaicai_video_ffmpeg_VideoControl_native_1opensl_1start(JNIEnv *env, jclass clazz) {
 
     const char *path = "/storage/emulated/0/aa.pcm";
-    pcmFile = fopen(path,"r");
-    if(pcmFile == NULL)
-    {
+    pcmFile = fopen(path, "r");
+    if (pcmFile == NULL) {
         LOGE("%s", "open file error");
         return;
     }
@@ -463,7 +462,7 @@ Java_com_dabaicai_video_ffmpeg_VideoControl_native_1opensl_1start(JNIEnv *env, j
     assert(SL_RESULT_SUCCESS == result);
     (void) result;
 
-    result = (*mixerObj)->GetInterface(mixerObj, SL_IID_ENVIRONMENTALREVERB,&outputMixEnvironmentalReverb);
+    result = (*mixerObj)->GetInterface(mixerObj, SL_IID_ENVIRONMENTALREVERB, &outputMixEnvironmentalReverb);
     if (SL_RESULT_SUCCESS == result) {
         result = (*outputMixEnvironmentalReverb)->SetEnvironmentalReverbProperties(
                 outputMixEnvironmentalReverb, &reverbSettings);
@@ -474,7 +473,7 @@ Java_com_dabaicai_video_ffmpeg_VideoControl_native_1opensl_1start(JNIEnv *env, j
     SLObjectItf playerObj;
     SLPlayItf playItf;
 
-    SLDataLocator_AndroidSimpleBufferQueue android_queue = {SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE,2};
+    SLDataLocator_AndroidSimpleBufferQueue android_queue = {SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE, 2};
     SLDataFormat_PCM pcm = {
             SL_DATAFORMAT_PCM,//播放pcm格式的数据
             2,//2个声道（立体声）
@@ -496,7 +495,7 @@ Java_com_dabaicai_video_ffmpeg_VideoControl_native_1opensl_1start(JNIEnv *env, j
     const SLboolean pInterfaceRequired[3] = {SL_BOOLEAN_TRUE, SL_BOOLEAN_TRUE, SL_BOOLEAN_TRUE,
             /*SL_BOOLEAN_TRUE,*/ };
 
-    result = (*engineItf)->CreateAudioPlayer(engineItf, &playerObj, &pAudioSrc, &pAudioSnk,numInterfaces,
+    result = (*engineItf)->CreateAudioPlayer(engineItf, &playerObj, &pAudioSrc, &pAudioSnk, numInterfaces,
                                              pInterfaceIds, pInterfaceRequired);
     assert(SL_RESULT_SUCCESS == result);
     (void) result;
@@ -731,7 +730,7 @@ void init_opensl_es() {
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_dabaicai_video_ffmpeg_VideoControl_native_1audio_1play(JNIEnv *env, jclass clazz,jstring _path) {
+Java_com_dabaicai_video_ffmpeg_VideoControl_native_1audio_1play(JNIEnv *env, jclass clazz, jstring _path) {
     const char *path = env->GetStringUTFChars(_path, 0);
 
     av_register_all();
@@ -812,4 +811,64 @@ Java_com_dabaicai_video_ffmpeg_VideoControl_native_1audio_1play(JNIEnv *env, jcl
      */
     out_buffer = (uint8_t *) (av_malloc(2 * 2 * 44100));
     init_opensl_es();
+}
+
+FFmpegPlayer *player;
+
+//线程  ----》javaVM
+JavaVM *javaVM = NULL;
+
+JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
+    javaVM = vm;
+    return JNI_VERSION_1_4;
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_dabaicai_video_ffmpeg_PlayerControl_native_1prepare(JNIEnv *env, jobject thiz, jstring path) {
+    // TODO: implement native_prepare()
+    const char *url = env->GetStringUTFChars(path, 0);
+    if (player) {
+        player->setPath(url);
+        player->prepare();
+    }
+    env->ReleaseStringUTFChars(path, url);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_dabaicai_video_ffmpeg_PlayerControl_native_1set_1surface(JNIEnv *env, jobject thiz, jobject surface) {
+    //JavaVM *javaVM, JNIEnv *env, jobject jclass
+    player = new FFmpegPlayer(javaVM, env, thiz);
+    player->setSurface(surface);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_dabaicai_video_ffmpeg_PlayerControl_native_1start(JNIEnv *env, jobject thiz) {
+    // TODO: implement native_start()
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_dabaicai_video_ffmpeg_PlayerControl_native_1stop(JNIEnv *env, jobject thiz) {
+    // TODO: implement native_stop()
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_dabaicai_video_ffmpeg_PlayerControl_native_1seek(JNIEnv *env, jobject thiz) {
+    // TODO: implement native_seek()
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_dabaicai_video_ffmpeg_PlayerControl_native_1speed(JNIEnv *env, jobject thiz, jint speed) {
+    // TODO: implement native_speed()
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_dabaicai_video_ffmpeg_PlayerControl_native_1change_1path(JNIEnv *env, jobject thiz, jstring path) {
+    // TODO: implement native_change_path()
 }

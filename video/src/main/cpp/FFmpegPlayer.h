@@ -9,6 +9,7 @@
 #include <pthread.h>
 #include "VideoChannel.h"
 #include "Constant.h"
+#include <android/native_window_jni.h>
 
 extern "C" {
 #include "libavformat/avformat.h"
@@ -27,7 +28,7 @@ extern "C" {
  */
 class FFmpegPlayer {
 private:
-    char *url;
+    const char *url;
     bool isPlaying;
     JavaVM *javaVM;
     VideoChannel *videoChannel;
@@ -37,8 +38,9 @@ private:
     JavaCallHelper *javaCallHelper;
     pthread_t prepare_pid;
     pthread_t play_pid;
+    JNIEnv *env;
 public:
-    void setPath(char *path);
+    void setPath(const char *path);
 
     void setSurface(jobject surface);
 
@@ -60,9 +62,10 @@ public:
     void error(int code, char *message);
 
 
-    FFmpegPlayer(JavaVM *javaVM, jobject jclass);
+    FFmpegPlayer(JavaVM *javaVM, JNIEnv *env, jobject jclass);
 
     ~FFmpegPlayer();
+
 };
 
 
