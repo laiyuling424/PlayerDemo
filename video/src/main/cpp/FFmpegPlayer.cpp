@@ -122,22 +122,32 @@ void FFmpegPlayer::prepareFFmpeg() {
             return;
         }
         if (this->formatContext->streams[i]->codecpar->codec_type == AVMediaType::AVMEDIA_TYPE_VIDEO) {
-            LOGE("channel id is %d", i);
-            if (videoChannel) {
-                continue;
+            if (!videoChannel) {
+                LOGE("videoChannel channel id is %d", i);
+                videoChannel = new VideoChannel(avCodecContext, this->formatContext->streams[i]->time_base, i,
+                                                this->javaCallHelper);
+                videoChannel->setFrameRender(renderFrame);
+                AVRational frame_rate = this->formatContext->streams[i]->avg_frame_rate;
+                int fps = av_q2d(frame_rate);
+                videoChannel->setFps(fps);
             }
-            videoChannel = new VideoChannel(avCodecContext, this->formatContext->streams[i]->time_base, i,
-                                            this->javaCallHelper);
-            videoChannel->setFrameRender(renderFrame);
 
             //视频
             //int fps = frame_rate.num / (double)frame_rate.den;
 //            int fps =av_q2d(this->formatContext->streams[i]->avg_frame_rate);
         } else if (this->formatContext->streams[i]->codecpar->codec_type == AVMediaType::AVMEDIA_TYPE_AUDIO) {
-
+            if (!audioChannel) {
+                LOGE("audioChannel channel id is %d", i);
+                audioChannel = new AudioChannel(avCodecContext, this->formatContext->streams[i]->time_base, i,
+                                                this->javaCallHelper);
+            }
         }
     }
-    if (videoChannel) {
+    if (!videoChannel && !audioChannel) {
+        return;
+    }
+    if (videoChannel && audioChannel) {
+        videoChannel->setAudioChannel(audioChannel);
         start();
     }
 }
@@ -145,6 +155,9 @@ void FFmpegPlayer::prepareFFmpeg() {
 
 void FFmpegPlayer::start() {
     this->isPlaying = true;
+    if (audioChannel) {
+        audioChannel->play();
+    }
     if (videoChannel) {
         videoChannel->play();
     }
@@ -158,17 +171,25 @@ void FFmpegPlayer::play() {
             av_usleep(1000 * 10);
             continue;
         }
+        if (audioChannel && audioChannel->package_queue.size() > 100) {
+            av_usleep(1000 * 10);
+            continue;
+        }
         AVPacket *avPacket = av_packet_alloc();
         ret = av_read_frame(this->formatContext, avPacket);
-        LOGE("avPacket->stream_index is %d", avPacket->stream_index);
+//        LOGE("avPacket->stream_index is %d", avPacket->stream_index);
         if (ret == 0) {
             if (avPacket->stream_index == videoChannel->channelId) {
                 videoChannel->package_queue.push(avPacket);
-                LOGE("package_queue push size is %d", videoChannel->package_queue.size());
+//                LOGE("videoChannel package_queue push size is %d", videoChannel->package_queue.size());
+            } else if (avPacket->stream_index == audioChannel->channelId) {
+                audioChannel->package_queue.push(avPacket);
+//                LOGE("audioChannel package_queue push size is %d", audioChannel->package_queue.size());
             }
         } else if (ret == AVERROR_EOF) {
             //读取完毕 但是不一定播放完毕
-            if (videoChannel->package_queue.empty() && videoChannel->frame_queue.empty()) {
+            if (videoChannel->package_queue.empty() && videoChannel->frame_queue.empty() &&
+                audioChannel->package_queue.empty() && audioChannel->frame_queue.empty()) {
                 LOGE("播放完毕。。。");
                 break;
             }
@@ -177,13 +198,13 @@ void FFmpegPlayer::play() {
             break;
         }
     }
-    isPlaying = false;
-    videoChannel->stop();
-
+    stop();
 }
 
 void FFmpegPlayer::stop() {
-
+    isPlaying = false;
+    videoChannel->stop();
+    audioChannel->stop();
 }
 
 void FFmpegPlayer::seek(int time) {

@@ -11,7 +11,7 @@
  */
 void *pthread_video_decode(void *context) {
     VideoChannel *videoChannel = static_cast<VideoChannel *>(context);
-    videoChannel->decodePacket();
+    videoChannel->decodeVideoPacket();
     return 0;
 }
 
@@ -39,19 +39,19 @@ void VideoChannel::play() {
     pthread_create(&play_pid, NULL, pthread_video_play, this);
 }
 
-void VideoChannel::decodePacket() {
+void VideoChannel::decodeVideoPacket() {
     int ret;
     AVPacket *packet = 0;
     while (this->getIsPlaying()) {
         ret = package_queue.pop(packet);
-        LOGE("package_queue pop size is %d", package_queue.size());
+//        LOGE("VideoChannel package_queue pop size is %d", package_queue.size());
         if (!isPlaying) {
             break;
         }
         if (!ret) {
             continue;
         }
-        ret = avcodec_send_packet(avCodecContext, packet);
+        avcodec_send_packet(avCodecContext, packet);
         releaseAvPacket(packet);
         AVFrame *avFrame = av_frame_alloc();
         ret = avcodec_receive_frame(avCodecContext, avFrame);
@@ -66,7 +66,7 @@ void VideoChannel::decodePacket() {
         }
 
         frame_queue.push(avFrame);
-        LOGE("frame_queue push size is %d", frame_queue.size());
+//        LOGE("VideoChannel frame_queue push size is %d", frame_queue.size());
         while (frame_queue.size() > 100 && isPlaying) {
             av_usleep(1000 * 10);
             continue;
@@ -92,23 +92,48 @@ void VideoChannel::render() {
     AVFrame *avFrame = 0;
     while (isPlaying) {
         ret = frame_queue.pop(avFrame);
-        LOGE("frame_queue pop size is %d", frame_queue.size());
+//        LOGE("VideoChannel frame_queue pop size is %d", frame_queue.size());
         if (!isPlaying) {
             break;
         }
         if (!ret) {
             continue;
         }
-        if (ret == 1) {
-            // 数据：avFrame -> dst_data
-            sws_scale(sws_ctx,
-                      reinterpret_cast<const uint8_t *const *>(avFrame->data), avFrame->linesize, 0,
-                      avFrame->height,
-                      dst_data, dst_linesize);
 
-            renderFrame(avCodecContext->width, avCodecContext->height, dst_data[0], dst_linesize[0]);
-        }
+        // 数据：avFrame -> dst_data
+        sws_scale(sws_ctx,
+                  reinterpret_cast<const uint8_t *const *>(avFrame->data), avFrame->linesize, 0,
+                  avFrame->height,
+                  dst_data, dst_linesize);
+
+        renderFrame(avCodecContext->width, avCodecContext->height, dst_data[0], dst_linesize[0]);
         LOGE("解码一帧视频  %d", frame_queue.size());
+        clock = avFrame->pts * av_q2d(time_base);
+        //延时的来源 解码延时 播放延时
+        //解码时间 看注释 extra_delay = repeat_pict / (2*fps)
+        double delay = avFrame->repeat_pict / (2 * fps);
+        double audioClock = audioChannel->clock;
+        double diff = clock - audioClock;
+        LOGE("diff is %f,delay is %f", diff, delay);
+        if (clock > audioClock) {//视频在前
+            if (diff > 1) {//差的太多，睡双倍
+                av_usleep((delay * 2) * 1000000);
+            } else {//差的不多，延时
+                av_usleep((delay + diff) * 1000000);
+            }
+        } else {//音频在前
+            if (diff > 1) {//不休眠
+
+            } else if (diff >= 0.05) {//差的不多 视频需要丢包 同步
+                releaseAvFrame(avFrame);
+                AVFrame *frame;
+                if (frame_queue.pop(frame)) {
+                    releaseAvFrame(frame);
+                }
+            } else { //差不多 可以选择性的丢包 删除 key frame
+
+            }
+        }
         releaseAvFrame(avFrame);
     }
 
@@ -120,7 +145,9 @@ void VideoChannel::render() {
 }
 
 void VideoChannel::stop() {
-
+    isPlaying = false;
+    package_queue.clear();
+    frame_queue.clear();
 }
 
 void VideoChannel::seek(int time) {
@@ -133,6 +160,14 @@ void VideoChannel::speed(int s) {
 
 void VideoChannel::setFrameRender(RenderFrame renderFrame) {
     this->renderFrame = renderFrame;
+}
+
+void VideoChannel::setAudioChannel(AudioChannel *audioChannel) {
+    this->audioChannel = audioChannel;
+}
+
+void VideoChannel::setFps(int fps) {
+    this->fps = fps;
 }
 
 

@@ -70,7 +70,7 @@ add_library( # Sets the name of the library.
         SHARED
 
         # Provides a relative path to your source file(s).
-        native-lib.cpp FFmpegPlayer.cpp JavaCallHelper.cpp VideoChannel.cpp)
+        native-lib.cpp FFmpegPlayer.cpp JavaCallHelper.cpp VideoChannel.cpp AudioChannel.cpp)
 
 
 find_library( # Sets the name of the path variable.

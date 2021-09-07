@@ -13,6 +13,7 @@
  */
 
 #include "BaseChannel.h"
+#include "AudioChannel.h"
 #include <jni.h>
 
 extern "C" {
@@ -32,6 +33,10 @@ private:
     pthread_t decode_pid;
     RenderFrame renderFrame;
 
+    int fps;
+public:
+    AudioChannel *audioChannel;
+
 public:
 
     VideoChannel(AVCodecContext *context, AVRational time, int id, JavaCallHelper *javaCallHelper);
@@ -46,11 +51,16 @@ public:
 
     virtual void speed(int s);
 
-    void decodePacket();
+    void decodeVideoPacket();
 
     void render();
 
     void setFrameRender(RenderFrame renderFrame);
+
+    void setAudioChannel(AudioChannel *audioChannel);
+
+    void setFps(int fps);
+
 };
 
 

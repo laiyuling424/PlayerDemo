@@ -8,6 +8,7 @@
 #include <jni.h>
 #include <pthread.h>
 #include "VideoChannel.h"
+#include "AudioChannel.h"
 #include "Constant.h"
 #include <android/native_window_jni.h>
 
@@ -31,9 +32,9 @@ private:
     const char *url;
     bool isPlaying;
     JavaVM *javaVM;
-    VideoChannel *videoChannel;
+    VideoChannel *videoChannel = NULL;
     jobject surface;
-//    AudioChannel *audioChannel;
+    AudioChannel *audioChannel = NULL;
     AVFormatContext *formatContext;
     JavaCallHelper *javaCallHelper;
     pthread_t prepare_pid;
