@@ -34,6 +34,8 @@ private:
     int out_channels;
     int out_samplesize;
     int out_sample_rate;
+
+    SLPlayItf playItf;
 public:
     //缓冲器队列接口
     SLAndroidSimpleBufferQueueItf bqPlayerBufferQueue;
@@ -54,6 +56,10 @@ public:
     virtual void seek(int time);
 
     virtual void speed(int s);
+
+    virtual void pause();
+
+    virtual void resume();
 
     void decodeAudioPacket();
 

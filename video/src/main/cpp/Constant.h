@@ -40,4 +40,14 @@
 #define AV_DICT_SET_ERROR 9
 
 
+//视频的状态
+#define PLAYER_NONE 0
+#define PLAYER_PREPARE 1
+#define PLAYER_PLAYING 2
+#define PLAYER_STOP 3
+#define PLAYER_DESTORY 4
+#define PLAYER_ACTIONDO 5
+#define PLAYER_PAUSE 6
+
+
 #endif //LYLPLAYERDEMO_CONSTANT_H

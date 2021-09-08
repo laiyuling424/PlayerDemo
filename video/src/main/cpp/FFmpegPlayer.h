@@ -60,8 +60,13 @@ public:
 
     void seek(int time);
 
-    void error(int code, char *message);
+    void pause();
 
+    void resume();
+
+    void speed(int speed);
+
+    void error(int code, char *message);
 
     FFmpegPlayer(JavaVM *javaVM, JNIEnv *env, jobject jclass);
 

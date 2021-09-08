@@ -24,6 +24,7 @@ extern "C" {
 #include "libavutil/imgutils.h"
 #include "libswresample/swresample.h"
 }
+
 typedef void (*RenderFrame)(int, int, uint8_t *, int);
 
 class VideoChannel : public BaseChannel {
@@ -50,6 +51,10 @@ public:
     virtual void seek(int time);
 
     virtual void speed(int s);
+
+    virtual void pause();
+
+    virtual void resume();
 
     void decodeVideoPacket();
 

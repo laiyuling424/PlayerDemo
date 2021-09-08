@@ -12,31 +12,24 @@ import android.view.SurfaceView;
 public class PlayerControl implements SurfaceHolder.Callback {
 
 
-    public enum PlayerStatus {
-        NONE(0),
-        PREPARE(1),
-        PLAYING(2),
-        STOP(3),
-        DESTORY(4),
-        ACTIONDO(5);
+    private long ptr;
 
-
-        int status;
-
-        private PlayerStatus(int code) {
-            this.status = code;
+    public void startOrStop() {
+//        native_prepare(ptr, path);
+        if (PlayerStatus.NONE == playerStatus) {
+            native_prepare(ptr, path);
+        } else if (PlayerStatus.PLAYING == playerStatus) {
+            native_pause(ptr);
+        } else if (PlayerStatus.PAUSE == playerStatus) {
+            native_start(ptr);
         }
-    }
-
-    enum Speed {
-        normal,
-        time2,
-        time3
     }
 
     static {
         System.loadLibrary("native-lib");
     }
+
+    private native void native_prepare(long ptr, String path);
 
     private PlayerStatus playerStatus;
     private String path;
@@ -57,17 +50,7 @@ public class PlayerControl implements SurfaceHolder.Callback {
         this.path = path;
     }
 
-
-    public void startOrStop() {
-        native_prepare(path);
-//        if (PlayerStatus.NONE == playerStatus) {
-//            native_prepare(path);
-//        } else if (PlayerStatus.PLAYING == playerStatus) {
-//            native_stop();
-//        } else if (PlayerStatus.STOP == playerStatus) {
-//            native_start();
-//        }
-    }
+    private native void native_start(long ptr);
 
     public void setCallBack(PlayerControlCallBack playerControlCallBack) {
         this.playerControlCallBack = playerControlCallBack;
@@ -97,31 +80,24 @@ public class PlayerControl implements SurfaceHolder.Callback {
 
     }
 
-    private native void native_prepare(String path);
+    private native void native_stop(long ptr);
 
     private native void native_set_surface(Surface surface);
 
-    private native void native_start();
+    private native void native_pause(long ptr);
 
-    private native void native_stop();
+    private native void native_seek(long ptr, int seektime);
 
-    private native void native_seek();
+    private native void native_speed(long ptr, int speed);
 
-    private native void native_speed(int speed);
-
-    private native void native_change_path(String path);
-
-    private void error(int code, String message) {
-        if (null != playerControlCallBack) {
-            playerControlCallBack.error(code, message);
-        }
-    }
+    private native void native_change_path(long ptr, String path);
 
     private void ready(int alltime) {
         videoTime = alltime;
         if (null != playerControlCallBack) {
             playerControlCallBack.ready(alltime);
         }
+        native_start(ptr);
     }
 
     private void status(int status) {
@@ -129,7 +105,6 @@ public class PlayerControl implements SurfaceHolder.Callback {
             playerStatus = PlayerStatus.NONE;
         } else if (status == 1) {
             playerStatus = PlayerStatus.PREPARE;
-            native_start();
         } else if (status == 2) {
             playerStatus = PlayerStatus.PLAYING;
         } else if (status == 3) {
@@ -138,10 +113,41 @@ public class PlayerControl implements SurfaceHolder.Callback {
             playerStatus = PlayerStatus.DESTORY;
         } else if (status == 5) {
             playerStatus = PlayerStatus.ACTIONDO;
+        } else if (status == 6) {
+            playerStatus = PlayerStatus.PAUSE;
         }
         if (null != playerControlCallBack) {
             playerControlCallBack.status(playerStatus);
         }
+    }
+
+    private void error(int code, String message) {
+        if (null != playerControlCallBack) {
+            playerControlCallBack.error(code, message);
+        }
+    }
+
+    public enum PlayerStatus {
+        NONE(0),
+        PREPARE(1),
+        PLAYING(2),
+        STOP(3),
+        DESTORY(4),
+        ACTIONDO(5),
+        PAUSE(6);
+
+
+        int status;
+
+        private PlayerStatus(int code) {
+            this.status = code;
+        }
+    }
+
+    enum Speed {
+        normal,
+        timex2,
+        timex3
     }
 
     private void videoInfo(int fps, int time) {

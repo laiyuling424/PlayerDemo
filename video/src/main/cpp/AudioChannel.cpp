@@ -56,8 +56,9 @@ int AudioChannel::getPackageSize() {
 //            data_size = ret * out_channels * av_get_bytes_per_sample(AV_SAMPLE_FMT_S16);
 //      //转换后多少数据  buffer size  44110*2*2
         data_size = nb * out_channels * out_samplesize;
-        LOGE("解码一帧音频  %d", frame_queue.size());
         clock = avFrame->pts * av_q2d(time_base);
+        LOGE("解码一帧音频  %d,clock is %f", frame_queue.size(), clock);
+//        javaCallHelper->call_java_videoInfo(THREAD_CHILD,60,)
 
         break;
     }
@@ -94,28 +95,12 @@ AudioChannel::~AudioChannel() {
 
 }
 
-void AudioChannel::play() {
-    swrContext = swr_alloc_set_opts(0,
-                                    AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_S16, out_sample_rate,
-                                    avCodecContext->channel_layout,
-                                    avCodecContext->sample_fmt,
-                                    avCodecContext->sample_rate, 0, 0);
-    swr_init(swrContext);
-    if (swr_init(swrContext) < 0) {
-        LOGE("swr_init error");
-        return;
-    }
-    this->package_queue.setWork(true);
-    this->frame_queue.setWork(true);
-    this->setIsPlaying();
-    pthread_create(&decode_pid, NULL, pthread_audio_decode, this);
-    pthread_create(&play_pid, NULL, pthread_audio_play, this);
-}
+
 
 void AudioChannel::decodeAudioPacket() {
     int ret;
     AVPacket *packet = 0;
-    while (this->getIsPlaying()) {
+    while (this->isPlaying) {
         ret = package_queue.pop(packet);
         LOGE("AudioChannel package_queue pop size is %d", package_queue.size());
         if (!isPlaying) {
@@ -156,10 +141,46 @@ void AudioChannel::decodeAudioPacket() {
 //    releaseAvPacket(packet);
 }
 
+void AudioChannel::play() {
+    swrContext = swr_alloc_set_opts(0,
+                                    AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_S16, out_sample_rate,
+                                    avCodecContext->channel_layout,
+                                    avCodecContext->sample_fmt,
+                                    avCodecContext->sample_rate, 0, 0);
+    swr_init(swrContext);
+    if (swr_init(swrContext) < 0) {
+        LOGE("swr_init error");
+        return;
+    }
+    this->package_queue.setWork(true);
+    this->frame_queue.setWork(true);
+    this->isPlaying = true;
+    pthread_create(&decode_pid, NULL, pthread_audio_decode, this);
+    pthread_create(&play_pid, NULL, pthread_audio_play, this);
+}
+
+void AudioChannel::pause() {
+    isPlaying = false;
+    this->package_queue.setWork(false);
+    this->frame_queue.setWork(false);
+    //5.设置播放状态
+    (*playItf)->SetPlayState(playItf, SL_PLAYSTATE_PAUSED);
+}
+
+void AudioChannel::resume() {
+    this->package_queue.setWork(true);
+    this->frame_queue.setWork(true);
+    this->isPlaying = true;
+    pthread_create(&decode_pid, NULL, pthread_audio_decode, this);
+    //5.设置播放状态
+    (*playItf)->SetPlayState(playItf, SL_PLAYSTATE_PLAYING);
+}
+
 void AudioChannel::stop() {
     isPlaying = false;
     package_queue.clear();
     frame_queue.clear();
+    (*playItf)->SetPlayState(playItf, SL_PLAYSTATE_STOPPED);
 }
 
 void AudioChannel::seek(int time) {
@@ -217,7 +238,6 @@ void AudioChannel::init_opensl_es() {
 
     //3.创建播放器
     SLObjectItf playerObj;
-    SLPlayItf playItf;
 
     SLDataLocator_AndroidSimpleBufferQueue android_queue = {SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE,
                                                             2};
@@ -279,6 +299,8 @@ void AudioChannel::init_opensl_es() {
     audioChannelBufferCallBack(bqPlayerBufferQueue, this);
     LOGE("--- 手动调用播放 packet:%d", this->package_queue.size());
 }
+
+
 
 
 

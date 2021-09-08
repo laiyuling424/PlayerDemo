@@ -69,6 +69,7 @@ void FFmpegPlayer::setSurface(jobject surface) {
 
 
 void FFmpegPlayer::prepare() {
+    javaCallHelper->call_java_status(THREAD_MAIN, PLAYER_PREPARE);
     pthread_create(&prepare_pid, NULL, pthread_prepare, this);
 }
 
@@ -131,10 +132,6 @@ void FFmpegPlayer::prepareFFmpeg() {
                 int fps = av_q2d(frame_rate);
                 videoChannel->setFps(fps);
             }
-
-            //视频
-            //int fps = frame_rate.num / (double)frame_rate.den;
-//            int fps =av_q2d(this->formatContext->streams[i]->avg_frame_rate);
         } else if (this->formatContext->streams[i]->codecpar->codec_type == AVMediaType::AVMEDIA_TYPE_AUDIO) {
             if (!audioChannel) {
                 LOGE("audioChannel channel id is %d", i);
@@ -148,7 +145,7 @@ void FFmpegPlayer::prepareFFmpeg() {
     }
     if (videoChannel && audioChannel) {
         videoChannel->setAudioChannel(audioChannel);
-        start();
+        javaCallHelper->call_java_ready(THREAD_CHILD, formatContext->duration / AV_TIME_BASE);
     }
 }
 
@@ -162,6 +159,7 @@ void FFmpegPlayer::start() {
         videoChannel->play();
     }
     pthread_create(&play_pid, NULL, pthread_ffmpeg_play, this);
+    javaCallHelper->call_java_status(THREAD_MAIN, PLAYER_PLAYING);
 }
 
 void FFmpegPlayer::play() {
@@ -205,6 +203,7 @@ void FFmpegPlayer::stop() {
     isPlaying = false;
     videoChannel->stop();
     audioChannel->stop();
+    javaCallHelper->call_java_status(THREAD_MAIN, PLAYER_STOP);
 }
 
 void FFmpegPlayer::seek(int time) {
@@ -214,6 +213,27 @@ void FFmpegPlayer::seek(int time) {
 void FFmpegPlayer::error(int code, char *message) {
 
 }
+
+void FFmpegPlayer::pause() {
+    if (audioChannel && videoChannel && isPlaying) {
+        isPlaying = false;
+        audioChannel->pause();
+        videoChannel->pause();
+        javaCallHelper->call_java_status(THREAD_MAIN, PLAYER_PAUSE);
+    }
+}
+
+
+void FFmpegPlayer::resume() {
+    if (audioChannel && videoChannel && !isPlaying) {
+        start();
+    }
+}
+
+void FFmpegPlayer::speed(int speed) {
+
+}
+
 
 
 

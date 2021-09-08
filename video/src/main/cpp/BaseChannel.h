@@ -49,14 +49,6 @@ public:
         LOGE("释放channel:%d %d", package_queue.size(), frame_queue.size());
     }
 
-    bool getIsPlaying() {
-        return isPlaying;
-    }
-
-    void setIsPlaying() {
-        isPlaying = true;
-    }
-
     static void releaseAvPacket(AVPacket *&packet) {
         if (packet) {
             av_packet_free(&packet);
@@ -78,6 +70,10 @@ public:
     virtual void seek(int time) = 0;
 
     virtual void speed(int s) = 0;
+
+    virtual void pause() = 0;
+
+    virtual void resume() = 0;
 };
 
 #endif //LYLPLAYERDEMO_BASECHANNEL_H

@@ -31,18 +31,10 @@ VideoChannel::~VideoChannel() {
 
 }
 
-void VideoChannel::play() {
-    this->package_queue.setWork(true);
-    this->frame_queue.setWork(true);
-    this->setIsPlaying();
-    pthread_create(&decode_pid, NULL, pthread_video_decode, this);
-    pthread_create(&play_pid, NULL, pthread_video_play, this);
-}
-
 void VideoChannel::decodeVideoPacket() {
     int ret;
     AVPacket *packet = 0;
-    while (this->getIsPlaying()) {
+    while (this->isPlaying) {
         ret = package_queue.pop(packet);
 //        LOGE("VideoChannel package_queue pop size is %d", package_queue.size());
         if (!isPlaying) {
@@ -144,8 +136,28 @@ void VideoChannel::render() {
     sws_freeContext(sws_ctx);
 }
 
+void VideoChannel::play() {
+    this->package_queue.setWork(true);
+    this->frame_queue.setWork(true);
+    this->isPlaying = true;
+    pthread_create(&decode_pid, NULL, pthread_video_decode, this);
+    pthread_create(&play_pid, NULL, pthread_video_play, this);
+}
+
+void VideoChannel::pause() {
+    isPlaying = false;
+    this->package_queue.setWork(false);
+    this->frame_queue.setWork(false);
+}
+
+void VideoChannel::resume() {
+    play();
+}
+
 void VideoChannel::stop() {
     isPlaying = false;
+    this->package_queue.setWork(false);
+    this->frame_queue.setWork(false);
     package_queue.clear();
     frame_queue.clear();
 }
@@ -169,6 +181,8 @@ void VideoChannel::setAudioChannel(AudioChannel *audioChannel) {
 void VideoChannel::setFps(int fps) {
     this->fps = fps;
 }
+
+
 
 
 

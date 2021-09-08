@@ -2,6 +2,7 @@ package com.dabaicai.video
 
 import android.os.Bundle
 import android.os.Environment
+import android.util.Log
 import android.view.SurfaceView
 import android.widget.Button
 import android.widget.SeekBar
@@ -10,7 +11,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.dabaicai.video.ffmpeg.PlayerControl
 import java.io.File
 
-class PlayerActivity : AppCompatActivity(), PlayerControl.PlayerControlCallBack {
+class PlayerActivity : AppCompatActivity(), PlayerControl.PlayerControlCallBack, SeekBar.OnSeekBarChangeListener {
 
     private lateinit var surfaceView: SurfaceView
     private lateinit var fps: TextView
@@ -55,17 +56,19 @@ class PlayerActivity : AppCompatActivity(), PlayerControl.PlayerControlCallBack 
         p1Button = findViewById(R.id.p1Button)
         p2Button = findViewById(R.id.p2Button)
 
-        statusButton.setOnClickListener {
+        seekBar.setOnSeekBarChangeListener(this)
+        seekBar.isEnabled = false
 
-//            File file = new File("/storage/emulated/0/aa.mp4");
-            val file = File(Environment.getExternalStorageDirectory(), "aa.mp4")
-            if (file.exists()) {
-                playerControl.setPath(file.absolutePath)
-                playerControl.startOrStop()
-            }
+        statusButton.setOnClickListener {
+            playerControl.startOrStop()
         }
 
         playerControl = PlayerControl(surfaceView)
+        //            File file = new File("/storage/emulated/0/aa.mp4");
+        val file = File(Environment.getExternalStorageDirectory(), "aa.mp4")
+        if (file.exists()) {
+            playerControl.setPath(file.absolutePath)
+        }
 
     }
 
@@ -74,7 +77,9 @@ class PlayerActivity : AppCompatActivity(), PlayerControl.PlayerControlCallBack 
     }
 
     override fun ready(alltime: Int) {
-
+        statusButton.text = "pause"
+        seekBar.max = alltime
+        seekBar.isEnabled = true
     }
 
     override fun status(status: PlayerControl.PlayerStatus) {
@@ -83,18 +88,33 @@ class PlayerActivity : AppCompatActivity(), PlayerControl.PlayerControlCallBack 
         } else if (status == PlayerControl.PlayerStatus.PREPARE) {
 
         } else if (status == PlayerControl.PlayerStatus.PLAYING) {
-            statusButton.text = "stop"
+            statusButton.text = "pause"
         } else if (status == PlayerControl.PlayerStatus.STOP) {
             statusButton.text = "play"
         } else if (status == PlayerControl.PlayerStatus.DESTORY) {
 
         } else if (status == PlayerControl.PlayerStatus.ACTIONDO) {
 
+        } else if (status == PlayerControl.PlayerStatus.PAUSE) {
+            statusButton.text = "resume"
         }
     }
 
     override fun videoInfo(fps: Int, time: Int, allTime: Int) {
         this.fps.text = "fps $fps"
         this.time.text = "$time/$allTime"
+        seekBar.progress = time
+    }
+
+    override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+        Log.d("lyll", "progress is $progress,fromUser is $fromUser")
+    }
+
+    override fun onStartTrackingTouch(seekBar: SeekBar?) {
+        Log.d("lyll", "onStartTrackingTouch is ${seekBar!!.progress}")
+    }
+
+    override fun onStopTrackingTouch(seekBar: SeekBar?) {
+        Log.d("lyll", "onStopTrackingTouch is ${seekBar!!.progress}")
     }
 }

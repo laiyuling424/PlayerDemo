@@ -813,7 +813,7 @@ Java_com_dabaicai_video_ffmpeg_VideoControl_native_1audio_1play(JNIEnv *env, jcl
     init_opensl_es();
 }
 
-FFmpegPlayer *player;
+
 
 //线程  ----》javaVM
 JavaVM *javaVM = NULL;
@@ -825,9 +825,10 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_dabaicai_video_ffmpeg_PlayerControl_native_1prepare(JNIEnv *env, jobject thiz, jstring path) {
+Java_com_dabaicai_video_ffmpeg_PlayerControl_native_1prepare(JNIEnv *env, jobject thiz, jlong ptr, jstring path) {
     // TODO: implement native_prepare()
     const char *url = env->GetStringUTFChars(path, 0);
+    FFmpegPlayer *player = reinterpret_cast<FFmpegPlayer *>(ptr);
     if (player) {
         player->setPath(url);
         player->prepare();
@@ -839,36 +840,52 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_com_dabaicai_video_ffmpeg_PlayerControl_native_1set_1surface(JNIEnv *env, jobject thiz, jobject surface) {
     //JavaVM *javaVM, JNIEnv *env, jobject jclass
-    player = new FFmpegPlayer(javaVM, env, thiz);
+    FFmpegPlayer *player = new FFmpegPlayer(javaVM, env, thiz);
     player->setSurface(surface);
+
+    jclass _jclass = env->GetObjectClass(thiz);
+    jfieldID ptr = env->GetFieldID(_jclass, "ptr", "J");
+    env->SetLongField(thiz, ptr, (jlong) player);
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_dabaicai_video_ffmpeg_PlayerControl_native_1start(JNIEnv *env, jobject thiz) {
-    // TODO: implement native_start()
+Java_com_dabaicai_video_ffmpeg_PlayerControl_native_1start(JNIEnv *env, jobject thiz, jlong ptr) {
+    FFmpegPlayer *player = reinterpret_cast<FFmpegPlayer *>(ptr);
+    player->start();
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_dabaicai_video_ffmpeg_PlayerControl_native_1stop(JNIEnv *env, jobject thiz) {
-    // TODO: implement native_stop()
+Java_com_dabaicai_video_ffmpeg_PlayerControl_native_1stop(JNIEnv *env, jobject thiz, jlong ptr) {
+    FFmpegPlayer *player = reinterpret_cast<FFmpegPlayer *>(ptr);
+    player->stop();
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_dabaicai_video_ffmpeg_PlayerControl_native_1seek(JNIEnv *env, jobject thiz) {
-    // TODO: implement native_seek()
+Java_com_dabaicai_video_ffmpeg_PlayerControl_native_1seek(JNIEnv *env, jobject thiz, jlong ptr, jint seektime) {
+    FFmpegPlayer *player = reinterpret_cast<FFmpegPlayer *>(ptr);
+    player->seek(seektime);
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_dabaicai_video_ffmpeg_PlayerControl_native_1speed(JNIEnv *env, jobject thiz, jint speed) {
-    // TODO: implement native_speed()
+Java_com_dabaicai_video_ffmpeg_PlayerControl_native_1speed(JNIEnv *env, jobject thiz, jlong ptr, jint speed) {
+    FFmpegPlayer *player = reinterpret_cast<FFmpegPlayer *>(ptr);
+    player->speed(speed);
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_dabaicai_video_ffmpeg_PlayerControl_native_1change_1path(JNIEnv *env, jobject thiz, jstring path) {
-    // TODO: implement native_change_path()
+Java_com_dabaicai_video_ffmpeg_PlayerControl_native_1change_1path(JNIEnv *env, jobject thiz, jlong ptr, jstring path) {
+    FFmpegPlayer *player = reinterpret_cast<FFmpegPlayer *>(ptr);
+//    player->setPath()
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_dabaicai_video_ffmpeg_PlayerControl_native_1pause(JNIEnv *env, jobject thiz, jlong ptr) {
+    FFmpegPlayer *player = reinterpret_cast<FFmpegPlayer *>(ptr);
+    player->pause();
 }
