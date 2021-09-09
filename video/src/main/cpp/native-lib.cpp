@@ -817,6 +817,7 @@ Java_com_dabaicai_video_ffmpeg_VideoControl_native_1audio_1play(JNIEnv *env, jcl
 
 //线程  ----》javaVM
 JavaVM *javaVM = NULL;
+//FFmpegPlayer *player;
 
 JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
     javaVM = vm;
@@ -833,6 +834,9 @@ Java_com_dabaicai_video_ffmpeg_PlayerControl_native_1prepare(JNIEnv *env, jobjec
         player->setPath(url);
         player->prepare();
     }
+    pid_t thread_id = gettid();
+    pid_t process_id = getpid();
+    LOGE("native_1prepare thread_id is %d,process_id is %d", thread_id, process_id);
     env->ReleaseStringUTFChars(path, url);
 }
 
@@ -845,6 +849,9 @@ Java_com_dabaicai_video_ffmpeg_PlayerControl_native_1set_1surface(JNIEnv *env, j
 
     jclass _jclass = env->GetObjectClass(thiz);
     jfieldID ptr = env->GetFieldID(_jclass, "ptr", "J");
+    pid_t thread_id = gettid();
+    pid_t process_id = getpid();
+    LOGE("native_1set_1surface thread_id is %d,process_id is %d", thread_id, process_id);
     env->SetLongField(thiz, ptr, (jlong) player);
 }
 
@@ -852,6 +859,9 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_com_dabaicai_video_ffmpeg_PlayerControl_native_1start(JNIEnv *env, jobject thiz, jlong ptr) {
     FFmpegPlayer *player = reinterpret_cast<FFmpegPlayer *>(ptr);
+    pid_t thread_id = gettid();
+    pid_t process_id = getpid();
+    LOGE("native_1start thread_id is %d,process_id is %d", thread_id, process_id);
     player->start();
 }
 

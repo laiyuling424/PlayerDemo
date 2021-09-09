@@ -64,6 +64,7 @@ class PlayerActivity : AppCompatActivity(), PlayerControl.PlayerControlCallBack,
         }
 
         playerControl = PlayerControl(surfaceView)
+        playerControl.setCallBack(this)
         //            File file = new File("/storage/emulated/0/aa.mp4");
         val file = File(Environment.getExternalStorageDirectory(), "aa.mp4")
         if (file.exists()) {
@@ -73,37 +74,46 @@ class PlayerActivity : AppCompatActivity(), PlayerControl.PlayerControlCallBack,
     }
 
     override fun error(code: Int, message: String) {
-        errorInfo.text = message
+        errorInfo.post {
+            errorInfo.text = message
+        }
     }
 
     override fun ready(alltime: Int) {
-        statusButton.text = "pause"
-        seekBar.max = alltime
-        seekBar.isEnabled = true
+//        statusButton.text = "pause"
+        statusButton.post {
+            statusButton.text = "pause"
+            seekBar.max = alltime
+            seekBar.isEnabled = true
+        }
     }
 
     override fun status(status: PlayerControl.PlayerStatus) {
-        if (status == PlayerControl.PlayerStatus.NONE) {
+        statusButton.post {
+            if (status == PlayerControl.PlayerStatus.NONE) {
 
-        } else if (status == PlayerControl.PlayerStatus.PREPARE) {
+            } else if (status == PlayerControl.PlayerStatus.PREPARE) {
 
-        } else if (status == PlayerControl.PlayerStatus.PLAYING) {
-            statusButton.text = "pause"
-        } else if (status == PlayerControl.PlayerStatus.STOP) {
-            statusButton.text = "play"
-        } else if (status == PlayerControl.PlayerStatus.DESTORY) {
+            } else if (status == PlayerControl.PlayerStatus.PLAYING) {
+                statusButton.text = "pause"
+            } else if (status == PlayerControl.PlayerStatus.STOP) {
+                statusButton.text = "play"
+            } else if (status == PlayerControl.PlayerStatus.DESTORY) {
 
-        } else if (status == PlayerControl.PlayerStatus.ACTIONDO) {
+            } else if (status == PlayerControl.PlayerStatus.ACTIONDO) {
 
-        } else if (status == PlayerControl.PlayerStatus.PAUSE) {
-            statusButton.text = "resume"
+            } else if (status == PlayerControl.PlayerStatus.PAUSE) {
+                statusButton.text = "resume"
+            }
         }
     }
 
     override fun videoInfo(fps: Int, time: Int, allTime: Int) {
-        this.fps.text = "fps $fps"
-        this.time.text = "$time/$allTime"
-        seekBar.progress = time
+        seekBar.post {
+            this.fps.text = "fps $fps"
+            this.time.text = "$time/$allTime"
+            seekBar.progress = time
+        }
     }
 
     override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {

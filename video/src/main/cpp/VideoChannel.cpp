@@ -99,14 +99,14 @@ void VideoChannel::render() {
                   dst_data, dst_linesize);
 
         renderFrame(avCodecContext->width, avCodecContext->height, dst_data[0], dst_linesize[0]);
-        LOGE("解码一帧视频  %d", frame_queue.size());
+//        LOGE("解码一帧视频  %d", frame_queue.size());
         clock = avFrame->pts * av_q2d(time_base);
         //延时的来源 解码延时 播放延时
         //解码时间 看注释 extra_delay = repeat_pict / (2*fps)
         double delay = avFrame->repeat_pict / (2 * fps);
         double audioClock = audioChannel->clock;
         double diff = clock - audioClock;
-        LOGE("diff is %f,delay is %f", diff, delay);
+//        LOGE("diff is %f,delay is %f", diff, delay);
         if (clock > audioClock) {//视频在前
             if (diff > 1) {//差的太多，睡双倍
                 av_usleep((delay * 2) * 1000000);
@@ -142,6 +142,8 @@ void VideoChannel::play() {
     this->isPlaying = true;
     pthread_create(&decode_pid, NULL, pthread_video_decode, this);
     pthread_create(&play_pid, NULL, pthread_video_play, this);
+    pthread_detach(play_pid);
+    pthread_detach(decode_pid);
 }
 
 void VideoChannel::pause() {

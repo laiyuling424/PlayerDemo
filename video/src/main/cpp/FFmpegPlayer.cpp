@@ -71,6 +71,7 @@ void FFmpegPlayer::setSurface(jobject surface) {
 void FFmpegPlayer::prepare() {
     javaCallHelper->call_java_status(THREAD_MAIN, PLAYER_PREPARE);
     pthread_create(&prepare_pid, NULL, pthread_prepare, this);
+    pthread_detach(prepare_pid);
 }
 
 void FFmpegPlayer::prepareFFmpeg() {
@@ -159,6 +160,7 @@ void FFmpegPlayer::start() {
         videoChannel->play();
     }
     pthread_create(&play_pid, NULL, pthread_ffmpeg_play, this);
+    pthread_detach(play_pid);
     javaCallHelper->call_java_status(THREAD_MAIN, PLAYER_PLAYING);
 }
 
@@ -203,7 +205,7 @@ void FFmpegPlayer::stop() {
     isPlaying = false;
     videoChannel->stop();
     audioChannel->stop();
-    javaCallHelper->call_java_status(THREAD_MAIN, PLAYER_STOP);
+//    javaCallHelper->call_java_status(THREAD_MAIN, PLAYER_STOP);
 }
 
 void FFmpegPlayer::seek(int time) {

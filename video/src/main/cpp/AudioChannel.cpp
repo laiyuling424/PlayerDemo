@@ -28,7 +28,7 @@ int AudioChannel::getPackageSize() {
     AVFrame *avFrame = 0;
     while (isPlaying) {
         ret = frame_queue.pop(avFrame);
-        LOGE("AudioChannel frame_queue pop size is %d", frame_queue.size());
+//        LOGE("AudioChannel frame_queue pop size is %d", frame_queue.size());
         if (!isPlaying) {
             break;
         }
@@ -57,8 +57,11 @@ int AudioChannel::getPackageSize() {
 //      //转换后多少数据  buffer size  44110*2*2
         data_size = nb * out_channels * out_samplesize;
         clock = avFrame->pts * av_q2d(time_base);
-        LOGE("解码一帧音频  %d,clock is %f", frame_queue.size(), clock);
-//        javaCallHelper->call_java_videoInfo(THREAD_CHILD,60,)
+//        LOGE("解码一帧音频  %d,clock is %f,last_time is %f", frame_queue.size(), clock, last_time);
+        if ((clock - last_time) > 1.0) {
+            last_time = clock;
+            javaCallHelper->call_java_videoInfo(THREAD_CHILD, 60, static_cast<int>(clock));
+        }
 
         break;
     }
@@ -71,7 +74,7 @@ void audioChannelBufferCallBack(SLAndroidSimpleBufferQueueItf bf, void *context)
     AudioChannel *audioChannel = static_cast<AudioChannel *>(context);
     int size = audioChannel->getPackageSize();
     if (size > 0) {
-        LOGE("size is %d", size);
+//        LOGE("size is %d", size);
         SLresult result;
         // enqueue another buffer
         result = (*bf)->Enqueue(bf, audioChannel->buffer, size);
@@ -96,13 +99,12 @@ AudioChannel::~AudioChannel() {
 }
 
 
-
 void AudioChannel::decodeAudioPacket() {
     int ret;
     AVPacket *packet = 0;
     while (this->isPlaying) {
         ret = package_queue.pop(packet);
-        LOGE("AudioChannel package_queue pop size is %d", package_queue.size());
+//        LOGE("AudioChannel package_queue pop size is %d", package_queue.size());
         if (!isPlaying) {
             break;
         }
@@ -136,7 +138,7 @@ void AudioChannel::decodeAudioPacket() {
             continue;
         }
         frame_queue.push(avFrame);
-        LOGE("AudioChannel frame_queue push size is %d", frame_queue.size());
+//        LOGE("AudioChannel frame_queue push size is %d", frame_queue.size());
     }
 //    releaseAvPacket(packet);
 }
@@ -157,6 +159,8 @@ void AudioChannel::play() {
     this->isPlaying = true;
     pthread_create(&decode_pid, NULL, pthread_audio_decode, this);
     pthread_create(&play_pid, NULL, pthread_audio_play, this);
+    pthread_detach(play_pid);
+    pthread_detach(decode_pid);
 }
 
 void AudioChannel::pause() {
@@ -172,6 +176,7 @@ void AudioChannel::resume() {
     this->frame_queue.setWork(true);
     this->isPlaying = true;
     pthread_create(&decode_pid, NULL, pthread_audio_decode, this);
+    pthread_detach(decode_pid);
     //5.设置播放状态
     (*playItf)->SetPlayState(playItf, SL_PLAYSTATE_PLAYING);
 }

@@ -7,6 +7,7 @@
 
 #include <jni.h>
 #include "Constant.h"
+#include <unistd.h>
 
 /**
  * author : lyl

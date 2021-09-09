@@ -36,6 +36,8 @@ private:
     int out_sample_rate;
 
     SLPlayItf playItf;
+
+    double last_time = 0;
 public:
     //缓冲器队列接口
     SLAndroidSimpleBufferQueueItf bqPlayerBufferQueue;
