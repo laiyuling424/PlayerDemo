@@ -33,7 +33,7 @@ private:
     pthread_t play_pid;
     pthread_t decode_pid;
     RenderFrame renderFrame;
-
+    int fastTime = 0;
     int fps;
 public:
     AudioChannel *audioChannel;
@@ -65,6 +65,8 @@ public:
     void setAudioChannel(AudioChannel *audioChannel);
 
     void setFps(int fps);
+
+    void audioTimeAdd(int time);
 
 };
 

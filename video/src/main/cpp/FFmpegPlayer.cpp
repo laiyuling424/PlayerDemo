@@ -198,7 +198,13 @@ void FFmpegPlayer::play() {
             break;
         }
     }
-    stop();
+
+    //1.播放暂停
+    //2.播放完了
+    if (!isPause) {
+        stop();
+    }
+    LOGE("FFmpegPlayer play thread end");
 }
 
 void FFmpegPlayer::stop() {
@@ -209,7 +215,22 @@ void FFmpegPlayer::stop() {
 }
 
 void FFmpegPlayer::seek(int time) {
-
+    if (!isPlaying) {
+        return;
+    }
+    time = (time + 3) * AV_TIME_BASE;
+    time += formatContext->start_time;
+    LOGE("FFmpegPlayer::seek time is %d", time);
+    if (avformat_seek_file(formatContext, -1, INT64_MIN, time, INT64_MAX, AVSEEK_FLAG_BACKWARD) < 0) {
+        LOGE("avformat_seek_file error");
+        return;
+    }
+    if (audioChannel) {
+        audioChannel->seek(time);
+    }
+    if (videoChannel) {
+        videoChannel->seek(time);
+    }
 }
 
 void FFmpegPlayer::error(int code, char *message) {
@@ -219,6 +240,7 @@ void FFmpegPlayer::error(int code, char *message) {
 void FFmpegPlayer::pause() {
     if (audioChannel && videoChannel && isPlaying) {
         isPlaying = false;
+        isPause = true;
         audioChannel->pause();
         videoChannel->pause();
         javaCallHelper->call_java_status(THREAD_MAIN, PLAYER_PAUSE);
@@ -228,12 +250,28 @@ void FFmpegPlayer::pause() {
 
 void FFmpegPlayer::resume() {
     if (audioChannel && videoChannel && !isPlaying) {
-        start();
+        isPlaying = true;
+        isPause = false;
+        if (audioChannel) {
+            audioChannel->resume();
+        }
+        if (videoChannel) {
+            videoChannel->resume();
+        }
+        pthread_create(&play_pid, NULL, pthread_ffmpeg_play, this);
+        pthread_detach(play_pid);
+        javaCallHelper->call_java_status(THREAD_MAIN, PLAYER_PLAYING);
     }
 }
 
 void FFmpegPlayer::speed(int speed) {
 
+}
+
+void FFmpegPlayer::audioTimeAdd(int time) {
+    if (audioChannel) {
+        audioChannel->audioTimeAdd(time);
+    }
 }
 
 

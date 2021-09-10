@@ -58,7 +58,7 @@ int AudioChannel::getPackageSize() {
         data_size = nb * out_channels * out_samplesize;
         clock = avFrame->pts * av_q2d(time_base);
 //        LOGE("解码一帧音频  %d,clock is %f,last_time is %f", frame_queue.size(), clock, last_time);
-        if ((clock - last_time) > 1.0) {
+        if (abs(clock - last_time) > 1.0) {
             last_time = clock;
             javaCallHelper->call_java_videoInfo(THREAD_CHILD, 60, static_cast<int>(clock));
         }
@@ -141,6 +141,7 @@ void AudioChannel::decodeAudioPacket() {
 //        LOGE("AudioChannel frame_queue push size is %d", frame_queue.size());
     }
 //    releaseAvPacket(packet);
+    LOGE("AudioChannel decodeAudioPacket thread end");
 }
 
 void AudioChannel::play() {
@@ -165,15 +166,18 @@ void AudioChannel::play() {
 
 void AudioChannel::pause() {
     isPlaying = false;
-    this->package_queue.setWork(false);
-    this->frame_queue.setWork(false);
+//    this->package_queue.setWork(false);
+//    this->frame_queue.setWork(false);
     //5.设置播放状态
     (*playItf)->SetPlayState(playItf, SL_PLAYSTATE_PAUSED);
 }
 
 void AudioChannel::resume() {
-    this->package_queue.setWork(true);
-    this->frame_queue.setWork(true);
+    /**
+    * TODO 疑惑 为什么加上下面两句话在 pause 后 resume 会 anr
+    */
+//    this->package_queue.setWork(true);
+//    this->frame_queue.setWork(true);
     this->isPlaying = true;
     pthread_create(&decode_pid, NULL, pthread_audio_decode, this);
     pthread_detach(decode_pid);
@@ -189,7 +193,9 @@ void AudioChannel::stop() {
 }
 
 void AudioChannel::seek(int time) {
-
+//    avcodec_flush_buffers(avCodecContext);
+    package_queue.clear();
+    frame_queue.clear();
 }
 
 void AudioChannel::speed(int s) {

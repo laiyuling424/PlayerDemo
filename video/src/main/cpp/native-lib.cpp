@@ -899,3 +899,17 @@ Java_com_dabaicai_video_ffmpeg_PlayerControl_native_1pause(JNIEnv *env, jobject 
     FFmpegPlayer *player = reinterpret_cast<FFmpegPlayer *>(ptr);
     player->pause();
 }
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_dabaicai_video_ffmpeg_PlayerControl_native_1resume(JNIEnv *env, jobject thiz, jlong ptr) {
+    FFmpegPlayer *player = reinterpret_cast<FFmpegPlayer *>(ptr);
+    player->resume();
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_dabaicai_video_ffmpeg_PlayerControl_native_1audio_1time_1add(JNIEnv *env, jobject thiz, jlong ptr, jint time) {
+    FFmpegPlayer *player = reinterpret_cast<FFmpegPlayer *>(ptr);
+    player->audioTimeAdd(time);
+}

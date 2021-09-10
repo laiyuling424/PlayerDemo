@@ -63,6 +63,26 @@ class PlayerActivity : AppCompatActivity(), PlayerControl.PlayerControlCallBack,
             playerControl.startOrStop()
         }
 
+        fastButton.setOnClickListener {
+            playerControl.seek(playerControl.videoPlayTime + 15);
+
+        }
+
+        slowButton.setOnClickListener {
+            playerControl.seek(playerControl.videoPlayTime - 15);
+
+        }
+
+        videoFastButton.setOnClickListener {
+            playerControl.audioPlayTimeAdd(-1)
+
+        }
+
+        audioFastButton.setOnClickListener {
+            playerControl.audioPlayTimeAdd(1)
+
+        }
+
         playerControl = PlayerControl(surfaceView)
         playerControl.setCallBack(this)
         //            File file = new File("/storage/emulated/0/aa.mp4");
@@ -126,5 +146,6 @@ class PlayerActivity : AppCompatActivity(), PlayerControl.PlayerControlCallBack,
 
     override fun onStopTrackingTouch(seekBar: SeekBar?) {
         Log.d("lyll", "onStopTrackingTouch is ${seekBar!!.progress}")
+        playerControl.seek(seekBar.progress)
     }
 }

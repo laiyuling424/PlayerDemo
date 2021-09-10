@@ -33,8 +33,20 @@ JavaCallHelper::JavaCallHelper(JavaVM *javaVM, JNIEnv *env, jobject jclazz) : ja
 JavaCallHelper::~JavaCallHelper() {
 
 }
-
+/**
+ * TODO 疑惑 为什么在 c++ 子线程调用 java 代码，在 java 里变成了子线程 看了其他 dranne 的就是自己传的参数 thread 来判断是不是主线程的
+ * @param thread
+ * @param fps
+ * @param time
+ */
 void JavaCallHelper::call_java_videoInfo(int thread, int fps, int time) {
+    /**
+     * TODO 疑惑  if (isMain()) 这样写不起作用
+     */
+    /**
+     * TODO 疑惑 thread 会导致分不清主线程与子线程
+     */
+//    if (isMain())
     pid_t thread_id = gettid();
     pid_t process_id = getpid();
     LOGE("call_java_videoInfo thread is %d,fps is %d,time is %d", thread, fps, time);
@@ -50,6 +62,9 @@ void JavaCallHelper::call_java_videoInfo(int thread, int fps, int time) {
             isAttached = true;
         }
         jniEnv->CallVoidMethod(playerControlclass, videoInfoID, fps, time);
+        /**
+         * TODO 注意 不加下面这个判断会出错
+         */
         if (isAttached) {
             javaVM->DetachCurrentThread();
         }

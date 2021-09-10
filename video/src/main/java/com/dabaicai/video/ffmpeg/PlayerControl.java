@@ -12,6 +12,19 @@ import android.view.SurfaceView;
  */
 public class PlayerControl implements SurfaceHolder.Callback {
 
+    private int cur_time;
+
+    public void startOrStop() {
+        Log.d("lyll", "calljava startOrStop thread name is " + Thread.currentThread().getName());
+        if (PlayerStatus.NONE == playerStatus) {
+            native_prepare(ptr, path);
+        } else if (PlayerStatus.PLAYING == playerStatus) {
+            native_pause(ptr);
+        } else if (PlayerStatus.PAUSE == playerStatus) {
+            native_resume(ptr);
+        }
+    }
+
     static {
         System.loadLibrary("native-lib");
     }
@@ -23,6 +36,10 @@ public class PlayerControl implements SurfaceHolder.Callback {
     private SurfaceHolder surfaceHolder;
     private PlayerControlCallBack playerControlCallBack;
 
+    public void setPath(String path) {
+        this.path = path;
+    }
+
     public PlayerControl(SurfaceView surfaceView) {
         Log.d("lyll", "calljava PlayerControl thread name is " + Thread.currentThread().getName());
         playerStatus = PlayerStatus.NONE;
@@ -33,17 +50,48 @@ public class PlayerControl implements SurfaceHolder.Callback {
         this.surfaceHolder.addCallback(this);
     }
 
-    public void startOrStop() {
-        Log.d("lyll", "calljava startOrStop thread name is " + Thread.currentThread().getName());
-//        native_prepare(ptr, path);
-        if (PlayerStatus.NONE == playerStatus) {
-            native_prepare(ptr, path);
-        } else if (PlayerStatus.PLAYING == playerStatus) {
-            native_pause(ptr);
-        } else if (PlayerStatus.PAUSE == playerStatus) {
-            native_start(ptr);
+    public void setCallBack(PlayerControlCallBack playerControlCallBack) {
+        this.playerControlCallBack = playerControlCallBack;
+    }
+
+    public void setSurfaceView(SurfaceView surfaceView) {
+        if (null != this.surfaceHolder) {
+            this.surfaceHolder.removeCallback(this);
+        }
+        this.surfaceHolder = surfaceView.getHolder();
+        this.surfaceHolder.addCallback(this);
+    }
+
+    public void seek(int seektime) {
+        if (seektime < 0) {
+            seektime = 0;
+        }
+        if (seektime > videoTime) {
+            seektime = videoTime - 5;
+        }
+        native_seek(ptr, seektime);
+    }
+
+    public int getVideoPlayTime() {
+        return cur_time;
+    }
+
+    public void audioPlayTimeAdd(int time) {
+        if (cur_time > 1) {
+            native_audio_time_add(ptr, time);
         }
     }
+
+    private void videoInfo(int fps, int time) {
+        Log.d("lyll", "calljava videoinfo thread name is " + Thread.currentThread().getName() + " time is " + time);
+        cur_time = time;
+        if (null != playerControlCallBack) {
+            playerControlCallBack.videoInfo(fps, time, videoTime);
+        }
+    }
+
+    private native void native_prepare(long ptr, String path);
+
 
     private void ready(int alltime) {
         Log.d("lyll", "calljava ready thread name is " + Thread.currentThread().getName() + "  alltime is " + alltime);
@@ -76,22 +124,6 @@ public class PlayerControl implements SurfaceHolder.Callback {
         }
     }
 
-    public void setPath(String path) {
-        this.path = path;
-    }
-
-    public void setCallBack(PlayerControlCallBack playerControlCallBack) {
-        this.playerControlCallBack = playerControlCallBack;
-    }
-
-    public void setSurfaceView(SurfaceView surfaceView) {
-        if (null != this.surfaceHolder) {
-            this.surfaceHolder.removeCallback(this);
-        }
-        this.surfaceHolder = surfaceView.getHolder();
-        this.surfaceHolder.addCallback(this);
-    }
-
     private void error(int code, String message) {
         Log.d("lyll", "calljava error thread name is " + Thread.currentThread().getName() + "  code is " + code);
         if (null != playerControlCallBack) {
@@ -99,12 +131,8 @@ public class PlayerControl implements SurfaceHolder.Callback {
         }
     }
 
-    private void videoInfo(int fps, int time) {
-        Log.d("lyll", "calljava videoinfo thread name is " + Thread.currentThread().getName() + " time is " + time);
-        if (null != playerControlCallBack) {
-            playerControlCallBack.videoInfo(fps, time, videoTime);
-        }
-    }
+    private native void native_start(long ptr);
+
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
@@ -112,9 +140,6 @@ public class PlayerControl implements SurfaceHolder.Callback {
         native_set_surface(holder.getSurface());
     }
 
-    private native void native_prepare(long ptr, String path);
-
-    private native void native_start(long ptr);
 
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
@@ -126,6 +151,15 @@ public class PlayerControl implements SurfaceHolder.Callback {
 
     }
 
+    private native void native_resume(long ptr);
+
+    private native void native_audio_time_add(long ptr, int time);
+
+    private native void native_stop(long ptr);
+
+    private native void native_set_surface(Surface surface);
+
+    private native void native_pause(long ptr);
 
     public enum PlayerStatus {
         NONE(0),
@@ -136,7 +170,6 @@ public class PlayerControl implements SurfaceHolder.Callback {
         ACTIONDO(5),
         PAUSE(6);
 
-
         int status;
 
         private PlayerStatus(int code) {
@@ -144,19 +177,13 @@ public class PlayerControl implements SurfaceHolder.Callback {
         }
     }
 
+    private native void native_seek(long ptr, int seektime);
+
     enum Speed {
         normal,
         timex2,
         timex3
     }
-
-    private native void native_stop(long ptr);
-
-    private native void native_set_surface(Surface surface);
-
-    private native void native_pause(long ptr);
-
-    private native void native_seek(long ptr, int seektime);
 
     private native void native_speed(long ptr, int speed);
 

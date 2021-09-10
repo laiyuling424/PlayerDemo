@@ -65,6 +65,7 @@ void VideoChannel::decodeVideoPacket() {
         }
     }
     releaseAvPacket(packet);
+    LOGE("VideoChannel decodeVideoPacket thread end");
 }
 
 void VideoChannel::render() {
@@ -105,7 +106,7 @@ void VideoChannel::render() {
         //解码时间 看注释 extra_delay = repeat_pict / (2*fps)
         double delay = avFrame->repeat_pict / (2 * fps);
         double audioClock = audioChannel->clock;
-        double diff = clock - audioClock;
+        double diff = clock - audioClock - fastTime;
 //        LOGE("diff is %f,delay is %f", diff, delay);
         if (clock > audioClock) {//视频在前
             if (diff > 1) {//差的太多，睡双倍
@@ -134,6 +135,7 @@ void VideoChannel::render() {
     isPlaying = false;
     releaseAvFrame(avFrame);
     sws_freeContext(sws_ctx);
+    LOGE("VideoChannel render thread end");
 }
 
 void VideoChannel::play() {
@@ -148,8 +150,8 @@ void VideoChannel::play() {
 
 void VideoChannel::pause() {
     isPlaying = false;
-    this->package_queue.setWork(false);
-    this->frame_queue.setWork(false);
+//    this->package_queue.setWork(false);
+//    this->frame_queue.setWork(false);
 }
 
 void VideoChannel::resume() {
@@ -165,7 +167,12 @@ void VideoChannel::stop() {
 }
 
 void VideoChannel::seek(int time) {
-
+    /**
+     * TODO 晚上说先 avformat_seek_file 再 avcodec_flush_buffers
+     */
+//    avcodec_flush_buffers(avCodecContext);
+    package_queue.clear();
+    frame_queue.clear();
 }
 
 void VideoChannel::speed(int s) {
@@ -182,6 +189,10 @@ void VideoChannel::setAudioChannel(AudioChannel *audioChannel) {
 
 void VideoChannel::setFps(int fps) {
     this->fps = fps;
+}
+
+void VideoChannel::audioTimeAdd(int time) {
+    fastTime = time;
 }
 
 

@@ -40,6 +40,7 @@ private:
     pthread_t prepare_pid;
     pthread_t play_pid;
     JNIEnv *env;
+    bool isPause = false;
 public:
     void setPath(const char *path);
 
@@ -72,6 +73,7 @@ public:
 
     ~FFmpegPlayer();
 
+    void audioTimeAdd(int time);
 };
 
 
