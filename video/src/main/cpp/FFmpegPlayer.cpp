@@ -270,7 +270,7 @@ void FFmpegPlayer::speed(int speed) {
 
 void FFmpegPlayer::audioTimeAdd(int time) {
     if (audioChannel) {
-        audioChannel->audioTimeAdd(time);
+//        audioChannel->audioTimeAdd(time);
     }
 }
 

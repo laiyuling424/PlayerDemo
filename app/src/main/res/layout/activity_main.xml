@@ -19,4 +19,11 @@
         android:onClick="player"
         android:text="player" />
 
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="opengl"
+        android:text="open gl" />
+
 </LinearLayout>

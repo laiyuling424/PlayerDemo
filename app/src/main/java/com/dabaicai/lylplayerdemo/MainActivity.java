@@ -59,4 +59,8 @@ public class MainActivity extends AppCompatActivity {
     public void player(View view) {
         startActivity(new Intent(MainActivity.this, PlayerActivity.class));
     }
+
+    public void opengl(View view) {
+
+    }
 }
