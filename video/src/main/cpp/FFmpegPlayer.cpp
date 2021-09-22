@@ -274,6 +274,44 @@ void FFmpegPlayer::audioTimeAdd(int time) {
     }
 }
 
+void *release_thread(void *arg) {
+//    FFmpegPlayer *player = static_cast<FFmpegPlayer *>(arg);
+//    isPlaying = true;
+//    nativeWindow = NULL;
+//    pthread_join(prepare_pid, NULL);
+//    pthread_join(play_pid, NULL);
+//    if (audioChannel) {
+//        audioChannel->release();
+//        delete audioChannel;
+//    }
+//    if (videoChannel) {
+//        videoChannel->release();
+//        delete videoChannel;
+//    }
+    return 0;
+}
+
+void FFmpegPlayer::release() {
+    //窗口及全局变量释放 队列清空
+    //锁的释放 开辟的空间
+    //线程释放前需要吧线程先关闭 pthread_join
+    //要不要开线程来清理？  开线程的话 private 数据怎么处理？ 变public还是怎么说
+//    pthread_create(&release_pid, NULL, release_thread, this);
+
+    isPlaying = true;
+    nativeWindow = NULL;
+    pthread_join(prepare_pid, NULL);
+    pthread_join(play_pid, NULL);
+    if (audioChannel) {
+        audioChannel->release();
+        delete audioChannel;
+    }
+    if (videoChannel) {
+        videoChannel->release();
+        delete videoChannel;
+    }
+}
+
 
 
 

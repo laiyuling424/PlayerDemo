@@ -194,8 +194,10 @@ void AudioChannel::stop() {
 
 void AudioChannel::seek(int time) {
 //    avcodec_flush_buffers(avCodecContext);
+    //要不要让队列停止工作
     package_queue.clear();
     frame_queue.clear();
+    //要不要让队列恢复工作
 }
 
 void AudioChannel::speed(int s) {
@@ -309,6 +311,15 @@ void AudioChannel::init_opensl_es() {
     //6.回调
     audioChannelBufferCallBack(bqPlayerBufferQueue, this);
     LOGE("--- 手动调用播放 packet:%d", this->package_queue.size());
+}
+
+void AudioChannel::release() {
+    isPlaying = false;
+    BaseChannel::release();
+    free(buffer);
+    buffer = NULL;
+    pthread_join(play_pid, NULL);
+    pthread_join(decode_pid, NULL);
 }
 
 

@@ -74,6 +74,13 @@ public:
     virtual void pause() = 0;
 
     virtual void resume() = 0;
+
+    virtual void release() {
+        isPlaying = false;
+        javaCallHelper = NULL;
+        package_queue.destory();
+        frame_queue.destory();
+    };
 };
 
 #endif //LYLPLAYERDEMO_BASECHANNEL_H

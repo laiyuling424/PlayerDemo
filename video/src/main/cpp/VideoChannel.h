@@ -56,6 +56,8 @@ public:
 
     virtual void resume();
 
+    virtual void release();
+
     void decodeVideoPacket();
 
     void render();

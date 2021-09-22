@@ -70,6 +70,13 @@ public:
         pthread_mutex_unlock(&_mutex);
     }
 
+    void destory() {
+        clear();
+        work = 0;
+        pthread_cond_destroy(&_cond);
+        pthread_mutex_destroy(&_mutex);
+    }
+
     void push(T data) {
         pthread_mutex_lock(&_mutex);
         if (!work) {

@@ -43,7 +43,6 @@ public:
     SLAndroidSimpleBufferQueueItf bqPlayerBufferQueue;
     //缓冲 buffer
     uint8_t *buffer;
-//    uint8_t *out_buffer;
 
 public:
 
@@ -62,6 +61,8 @@ public:
     virtual void pause();
 
     virtual void resume();
+
+    virtual void release();
 
     void decodeAudioPacket();
 

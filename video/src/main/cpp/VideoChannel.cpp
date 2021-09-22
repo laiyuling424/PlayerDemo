@@ -195,6 +195,13 @@ void VideoChannel::audioTimeAdd(int time) {
     fastTime = time;
 }
 
+void VideoChannel::release() {
+    isPlaying = false;
+    BaseChannel::release();
+    pthread_join(play_pid, NULL);
+    pthread_join(decode_pid, NULL);
+}
+
 
 
 

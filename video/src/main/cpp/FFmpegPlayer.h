@@ -39,6 +39,7 @@ private:
     JavaCallHelper *javaCallHelper;
     pthread_t prepare_pid;
     pthread_t play_pid;
+    pthread_t release_pid;
     JNIEnv *env;
     bool isPause = false;
 public:
@@ -64,6 +65,8 @@ public:
     void pause();
 
     void resume();
+
+    void release();
 
     void speed(int speed);
 
