@@ -315,9 +315,18 @@ void AudioChannel::init_opensl_es() {
 
 void AudioChannel::release() {
     isPlaying = false;
+
     BaseChannel::release();
+
+    if (swrContext != NULL) {
+        swr_free(&swrContext);
+        free(swrContext);
+        swrContext = NULL;
+    }
+
     free(buffer);
     buffer = NULL;
+
     pthread_join(play_pid, NULL);
     pthread_join(decode_pid, NULL);
 }

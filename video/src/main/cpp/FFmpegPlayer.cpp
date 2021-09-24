@@ -62,7 +62,7 @@ void FFmpegPlayer::setPath(const char *path) {
 }
 
 void FFmpegPlayer::setSurface(jobject surface) {
-    this->surface = surface;
+//    this->surface = surface;
     //绘制窗口 从 java 层拿到 surface ，在通过 surface 拿到 native_window，绘制画面到 window 窗口上
     nativeWindow = ANativeWindow_fromSurface(env, surface);
 }
@@ -276,18 +276,7 @@ void FFmpegPlayer::audioTimeAdd(int time) {
 
 void *release_thread(void *arg) {
 //    FFmpegPlayer *player = static_cast<FFmpegPlayer *>(arg);
-//    isPlaying = true;
-//    nativeWindow = NULL;
-//    pthread_join(prepare_pid, NULL);
-//    pthread_join(play_pid, NULL);
-//    if (audioChannel) {
-//        audioChannel->release();
-//        delete audioChannel;
-//    }
-//    if (videoChannel) {
-//        videoChannel->release();
-//        delete videoChannel;
-//    }
+//    DELETE(player->audioChannel);
     return 0;
 }
 
@@ -298,10 +287,22 @@ void FFmpegPlayer::release() {
     //要不要开线程来清理？  开线程的话 private 数据怎么处理？ 变public还是怎么说
 //    pthread_create(&release_pid, NULL, release_thread, this);
 
-    isPlaying = true;
+    isPlaying = false;
     nativeWindow = NULL;
+    javaCallHelper = NULL;
+
+    avformat_close_input(&formatContext);
+    avformat_free_context(formatContext);
+    formatContext = NULL;
+
+    if (url != NULL) {
+        free(&url);
+        url = NULL;
+    }
+
     pthread_join(prepare_pid, NULL);
     pthread_join(play_pid, NULL);
+
     if (audioChannel) {
         audioChannel->release();
         delete audioChannel;

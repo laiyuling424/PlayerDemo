@@ -78,6 +78,13 @@ public:
     virtual void release() {
         isPlaying = false;
         javaCallHelper = NULL;
+
+        if (avCodecContext != NULL) {
+            avcodec_close(avCodecContext);
+            avcodec_free_context(&avCodecContext);
+            avCodecContext = NULL;
+        }
+
         package_queue.destory();
         frame_queue.destory();
     };

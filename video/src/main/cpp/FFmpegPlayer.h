@@ -33,7 +33,7 @@ private:
     bool isPlaying;
     JavaVM *javaVM;
     VideoChannel *videoChannel = NULL;
-    jobject surface;
+//    jobject surface;
     AudioChannel *audioChannel = NULL;
     AVFormatContext *formatContext;
     JavaCallHelper *javaCallHelper;
