@@ -3,8 +3,8 @@
     package="com.dabaicai.video">
 
     <application>
-        <activity android:name=".PlayerActivity">
-        </activity>
+        <activity android:name=".GLPlayerActivity"></activity>
+        <activity android:name=".PlayerActivity"></activity>
         <activity android:name=".MainActivity2" />
     </application>
 

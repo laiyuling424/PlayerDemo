@@ -93,5 +93,7 @@ target_link_libraries( # Specifies the target library.
         swscale
         android
         OpenSLES
+        -lEGL
+        -lGLESv2
         z
-        ${log-lib} )
+        ${log-lib})

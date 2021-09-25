@@ -7,6 +7,7 @@ import android.widget.Button;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.dabaicai.video.GLPlayerActivity;
 import com.dabaicai.video.MainActivity2;
 import com.dabaicai.video.PlayerActivity;
 
@@ -61,6 +62,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void opengl(View view) {
-
+        startActivity(new Intent(MainActivity.this, GLPlayerActivity.class));
     }
 }
