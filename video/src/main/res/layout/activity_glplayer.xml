@@ -9,8 +9,8 @@
 
     <SurfaceView
         android:id="@+id/glSurfaceView"
-        android:layout_width="1304px"
-        android:layout_height="524px" />
+        android:layout_width="match_parent"
+        android:layout_height="200dp" />
 
 
     <LinearLayout

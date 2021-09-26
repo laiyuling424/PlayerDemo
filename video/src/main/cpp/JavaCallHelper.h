@@ -19,10 +19,6 @@ private:
     jobject playerControlclass;
     JavaVM *javaVM;
     JNIEnv *env;
-    //private void videoInfo(int fps, int time)
-    //private void status(int status)
-    //private void ready(int alltime)
-    //private void error(int code, String message)
     jmethodID videoInfoID;
     jmethodID statusID;
     jmethodID readyID;
